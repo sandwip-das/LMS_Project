@@ -1,0 +1,77 @@
+LMS_Project - Professional Learning Management System
+A high-performance, industry-standard Learning Management System (LMS) designed for scalability, ease of use, and a premium user experience. This platform supports multiple user roles, dynamic course management, and a robust curriculum building system.
+
+🚀 Project Overview
+This LMS is built to handle the entire lifecycle of online education—from course creation and batch management to student enrollment and live class tracking. It features a sleek, modern interface inspired by top-tier educational platforms like Ostad.app, with a focus on high conversion and interactive learning.
+
+✨ Key Features
+Multi-Role Architecture:
+Admin: Full control over site settings, categories, and users.
+Instructor: Manage courses, modules, and interact with students.
+Student: Personalized dashboard, course progress tracking, and resource access.
+Dynamic Course Management:
+Create batches, set schedules, and manage seat limits.
+Automated seat tracking (Total Seats vs. Enrolled).
+Advanced Curriculum Builder:
+Drag-and-drop style module management.
+Weekly breakdown of topics, live classes, quizzes, and assignments.
+Premium UI/UX:
+Fully responsive design with a "Blue & Deep Navy" theme.
+Dynamic profile management with image cropping and real-time previews.
+Interactive "Course Detail" pages with sticky enrollment bars.
+
+🛠 Tech Stack
+Frontend:
+React.js (Vite)
+Vanilla CSS & Modern Styling
+Lucide React (Icons)
+Framer Motion (Animations)
+Backend:
+Django (Python 3.12)
+Django REST Framework (API)
+SQLite (Development)
+
+⚙️ Setup Instructions
+Prerequisites
+Python 3.8+
+Node.js 16+
+npm or yarn
+Backend Setup
+Navigate to the backend directory:
+cd backend
+Create and activate a virtual environment:
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux/Mac:
+source venv/bin/activate
+Install dependencies:
+
+pip install -r requirements.txt
+
+Run migrations:
+python manage.py makemigrations
+python manage.py migrate
+
+Create a superuser (Admin):
+python manage.py createsuperuser
+
+Start the development server:
+python manage.py runserver
+
+Frontend Setup
+Navigate to the frontend directory:
+cd frontend
+Install dependencies:
+npm install
+
+Start the development server:
+npm run dev
+
+Accessing the App
+Frontend: http://localhost:5173
+Admin Dashboard: http://localhost:5173/dashboard (Log in with admin credentials)
+Backend API: http://localhost:8000/api
+
+Admin ID: sandwip
+Pssword: 1234
