@@ -8,13 +8,17 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import (
     Category, Course, Enrollment, Batch, Module, ModuleWeek, 
     LiveClass, Lesson, Testimonial, ToolTech, CourseRequirement, 
-    Project, ProjectToolImage
+    Project, ProjectToolImage, Wishlist,
+    WeekItem, Quiz, QuizQuestion, QuizSubmission, Assignment, AssignmentSubmission
 )
 from .serializers import (
     CategorySerializer, CourseSerializer, EnrollmentSerializer,
     BatchSerializer, ModuleSerializer, ModuleWeekSerializer,
     LiveClassSerializer, LessonSerializer, TestimonialSerializer,
-    ToolTechSerializer, CourseRequirementSerializer, ProjectSerializer
+    ToolTechSerializer, CourseRequirementSerializer, ProjectSerializer,
+    WishlistSerializer, WeekItemSerializer,
+    QuizSerializer, QuizQuestionSerializer, QuizSubmissionSerializer,
+    AssignmentSerializer, AssignmentSubmissionSerializer
 )
 
 User = get_user_model()
@@ -49,7 +53,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         # Public listing (not in admin context)
         if not self.request.query_params.get('admin_view'):
-            return queryset
+            return queryset.filter(is_published=True)
 
         # Admin context filtering
         if not user.is_authenticated:
@@ -120,6 +124,36 @@ class LessonViewSet(viewsets.ModelViewSet):
     serializer_class = LessonSerializer
     permission_classes = [IsInstructorStaff]
 
+class WeekItemViewSet(viewsets.ModelViewSet):
+    queryset = WeekItem.objects.all()
+    serializer_class = WeekItemSerializer
+    permission_classes = [IsInstructorStaff]
+
+class QuizViewSet(viewsets.ModelViewSet):
+    queryset = Quiz.objects.all()
+    serializer_class = QuizSerializer
+    permission_classes = [IsInstructorStaff]
+
+class QuizQuestionViewSet(viewsets.ModelViewSet):
+    queryset = QuizQuestion.objects.all()
+    serializer_class = QuizQuestionSerializer
+    permission_classes = [IsInstructorStaff]
+
+class QuizSubmissionViewSet(viewsets.ModelViewSet):
+    queryset = QuizSubmission.objects.all()
+    serializer_class = QuizSubmissionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class AssignmentViewSet(viewsets.ModelViewSet):
+    queryset = Assignment.objects.all()
+    serializer_class = AssignmentSerializer
+    permission_classes = [IsInstructorStaff]
+
+class AssignmentSubmissionViewSet(viewsets.ModelViewSet):
+    queryset = AssignmentSubmission.objects.all()
+    serializer_class = AssignmentSubmissionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
 class EnrollmentViewSet(viewsets.ModelViewSet):
     serializer_class = EnrollmentSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -166,3 +200,13 @@ class DashboardSummaryView(APIView):
             'active_batches': Batch.objects.filter(is_active=True).count(),
             'instructor_count': User.objects.filter(role='instructor').count(),
         })
+
+class WishlistViewSet(viewsets.ModelViewSet):
+    serializer_class = WishlistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Wishlist.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

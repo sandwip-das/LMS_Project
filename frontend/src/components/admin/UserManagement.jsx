@@ -4,7 +4,6 @@ import api from '../../api';
 import CustomModal from '../CustomModal';
 import { formatDate } from '../../utils/dateFormatter';
 import { SiteContext } from '../../context/SiteContext';
-import { useFormPersist } from '../../hooks/useFormPersist';
 
 const UserManagement = () => {
   const { showToast } = useContext(SiteContext);
@@ -22,9 +21,6 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({
     full_name: '', mobile_number: '', email: '', user_id_custom: '', password: '', confirm_password: '', role: 'student'
   });
-
-  // Auto-save and restore form draft
-  const { clearDraft } = useFormPersist('user_mgmt', formData, setFormData, showModal);
 
   const fetchUsers = async () => {
     try {
@@ -110,7 +106,6 @@ const UserManagement = () => {
         showToast('New user account has been created successfully.', 'success');
       }
       setShowModal(false);
-      clearDraft();
       fetchUsers();
     } catch (err) {
       showToast(err.response?.data ? Object.values(err.response.data).flat().join(", ") : "Failed to save user", 'error');
@@ -122,7 +117,7 @@ const UserManagement = () => {
     : users;
 
   return (
-    <div style={{ padding: '30px' }}>
+    <div style={{ padding: '0px' }}>
       <CustomModal 
         isOpen={notification.isOpen} 
         type={notification.type} 
@@ -133,9 +128,9 @@ const UserManagement = () => {
         isLoading={isDeleting}
       />
 
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '30px' }}>
-        <button onClick={handleCreateNew} style={{ padding: '12px 24px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}><Plus size={18} /> Create New User</button>
-        <button onClick={() => setViewMode(viewMode === 'search' ? 'list' : 'search')} style={{ padding: '12px 24px', background: '#f1f5f9', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}><Search size={18} /> {viewMode === 'search' ? 'Back to List' : 'Search User'}</button>
+      <div style={{ display: 'flex', gap: '5px', marginBottom: '5px' }}>
+        <button onClick={handleCreateNew} style={{ padding: '5px 10px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600', fontSize: '0.85rem' }}><Plus size={16} /> Create New User</button>
+        <button onClick={() => setViewMode(viewMode === 'search' ? 'list' : 'search')} style={{ padding: '5px 10px', background: '#f1f5f9', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600', fontSize: '0.85rem' }}><Search size={16} /> {viewMode === 'search' ? 'Back to List' : 'Search User'}</button>
       </div>
 
       {viewMode === 'search' && (
@@ -148,42 +143,42 @@ const UserManagement = () => {
       )}
 
       <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={{ padding: '15px' }}>SL</th>
-              <th style={{ padding: '15px' }}>Full Name</th>
-              <th style={{ padding: '15px' }}>Mobile</th>
-              <th style={{ padding: '15px' }}>Email</th>
-              <th style={{ padding: '15px' }}>User ID</th>
-              <th style={{ padding: '15px' }}>Joined</th>
-              <th style={{ padding: '15px' }}>Role</th>
-              <th style={{ padding: '15px' }}>Action</th>
+              <th style={{ padding: '5px' }}>SL</th>
+              <th style={{ padding: '5px' }}>Full Name</th>
+              <th style={{ padding: '5px' }}>Mobile</th>
+              <th style={{ padding: '5px' }}>Email</th>
+              <th style={{ padding: '5px' }}>User ID</th>
+              <th style={{ padding: '5px' }}>Joined</th>
+              <th style={{ padding: '5px' }}>Role</th>
+              <th style={{ padding: '5px' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map((u, i) => (
               <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '15px' }}>{i + 1}</td>
-                <td style={{ padding: '15px', fontWeight: '600' }}>
+                <td style={{ padding: '5px' }}>{i + 1}</td>
+                <td style={{ padding: '5px', fontWeight: '600' }}>
                   {(u.first_name || u.last_name) ? `${u.first_name} ${u.last_name || ''}` : u.username}
                 </td>
-                <td style={{ padding: '15px' }}>{u.mobile_number}</td>
-                <td style={{ padding: '15px' }}>{u.email}</td>
-                <td style={{ padding: '15px' }}>{u.user_id_custom}</td>
-                <td style={{ padding: '15px' }}>{formatDate(u.date_joined)}</td>
-                <td style={{ padding: '15px' }}>
+                <td style={{ padding: '5px' }}>{u.mobile_number}</td>
+                <td style={{ padding: '5px' }}>{u.email}</td>
+                <td style={{ padding: '5px' }}>{u.user_id_custom}</td>
+                <td style={{ padding: '5px' }}>{formatDate(u.date_joined)}</td>
+                <td style={{ padding: '5px' }}>
                   {u.is_superuser ? (
-                    <span style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>Super User</span>
+                    <span style={{ padding: '4px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>Super User</span>
                   ) : (u.role && u.role !== 'student') ? (
-                    <span style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' }}>
+                    <span style={{ padding: '4px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '800', textTransform: 'uppercase', background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' }}>
                       {u.role.replace('_', ' ')}
                     </span>
                   ) : null}
                 </td>
-                <td style={{ padding: '15px' }}>
-                  <button onClick={() => handleEdit(u)} style={{ background: 'transparent', border: 'none', color: '#0ea5e9', cursor: 'pointer', marginRight: '10px' }}><Edit size={18} /></button>
-                  <button onClick={() => confirmDelete(u)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                <td style={{ padding: '5px' }}>
+                  <button onClick={() => handleEdit(u)} style={{ background: 'transparent', border: 'none', color: '#0ea5e9', cursor: 'pointer', marginRight: '10px', padding: '5px' }}><Edit size={16} /></button>
+                  <button onClick={() => confirmDelete(u)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '5px' }}><Trash2 size={16} /></button>
                 </td>
               </tr>
             ))}
@@ -198,30 +193,30 @@ const UserManagement = () => {
               <h2 style={{ margin: 0 }}>{isEditing ? 'Edit User Record' : 'Add New User'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X /></button>
             </div>
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <form onSubmit={handleSubmit} autoComplete="off" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Full Name</label>
-                <input type="text" required value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Enter full name" />
+                <input type="text" required value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Enter full name" />
               </div>
               
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Mobile Number</label>
-                <input type="text" required value={formData.mobile_number} onChange={(e) => setFormData({...formData, mobile_number: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="9-15 digits" />
+                <input type="text" required value={formData.mobile_number} onChange={(e) => setFormData({...formData, mobile_number: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="9-15 digits" />
               </div>
 
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Email Address</label>
-                <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="email@example.com" />
+                <input type="email" autoComplete="new-password" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="email@example.com" />
               </div>
 
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>User ID</label>
-                <input type="text" value={formData.user_id_custom} onChange={(e) => setFormData({...formData, user_id_custom: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Custom account ID" />
+                <input type="text" value={formData.user_id_custom} onChange={(e) => setFormData({...formData, user_id_custom: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Custom account ID" />
               </div>
 
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>User Role</label>
-                <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white' }}>
+                <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white' }}>
                    <option value="administrator">Administrator</option>
                    <option value="moderator">Moderator</option>
                    <option value="instructor">Instructor</option>
@@ -232,7 +227,7 @@ const UserManagement = () => {
               <div style={{ position: 'relative' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Password</label>
                 <div style={{ position: 'relative' }}>
-                  <input type={showPasswords ? "text" : "password"} required={!isEditing} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', paddingRight: '45px' }} placeholder="••••••••" />
+                  <input type={showPasswords ? "text" : "password"} autoComplete="new-password" required={!isEditing} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', paddingRight: '45px' }} placeholder="••••••••" />
                   <button type="button" onClick={() => setShowPasswords(!showPasswords)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center' }}>
                     {showPasswords ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -242,7 +237,7 @@ const UserManagement = () => {
                <div style={{ position: 'relative' }}>
                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Confirm Password</label>
                  <div style={{ position: 'relative' }}>
-                   <input type={showPasswords ? "text" : "password"} required={!isEditing} value={formData.confirm_password} onChange={(e) => setFormData({...formData, confirm_password: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', paddingRight: '45px' }} placeholder="••••••••" />
+                   <input type={showPasswords ? "text" : "password"} autoComplete="new-password" required={!isEditing} value={formData.confirm_password} onChange={(e) => setFormData({...formData, confirm_password: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', paddingRight: '45px' }} placeholder="••••••••" />
                    <button type="button" onClick={() => setShowPasswords(!showPasswords)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center' }}>
                      {showPasswords ? <EyeOff size={20} /> : <Eye size={20} />}
                    </button>

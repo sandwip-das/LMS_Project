@@ -6,12 +6,14 @@ import {
   Video, FileText, BarChart, Settings, Clock, Link as LinkIcon, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import api from '../../api';
 import CustomModal from '../CustomModal';
 import { formatDate } from '../../utils/dateFormatter';
 
 const CourseManagement = () => {
-  const [activeTab, setActiveTab] = useState('categories');
+  const [activeTab, setActiveTab] = useState('all-courses');
   const [categories, setCategories] = useState([]);
   const [courses, setCourses] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -68,7 +70,7 @@ const CourseManagement = () => {
   };
 
   return (
-    <div style={{ padding: '30px', maxWidth: '1600px', margin: '0 auto' }}>
+    <div style={{ padding: '0px', maxWidth: '1600px', margin: '0 auto' }}>
       <CustomModal 
         isOpen={notification.isOpen} 
         type={notification.type} 
@@ -80,6 +82,7 @@ const CourseManagement = () => {
 
       <div style={styles.tabContainer}>
         {[
+          { id: 'all-courses', label: 'All Courses', icon: BookOpen },
           { id: 'categories', label: 'Add Course Category', icon: Layers },
           { id: 'courses', label: 'Add Courses', icon: BookOpen },
           { id: 'curriculum', label: 'Course Curriculum', icon: GraduationCap },
@@ -93,6 +96,7 @@ const CourseManagement = () => {
       </div>
 
       <div className="tab-content fade-in">
+        {activeTab === 'all-courses' && <AllCoursesSection courses={courses} categories={categories} />}
         {activeTab === 'categories' && <CategorySection categories={categories} onRefresh={fetchData} notify={notify} />}
         {activeTab === 'courses' && <CourseSection categories={categories} courses={courses} onRefresh={fetchData} notify={notify} />}
         {activeTab === 'curriculum' && <CurriculumSection courses={courses} categories={categories} allUsers={allUsers} notify={notify} onRefresh={fetchData} />}
@@ -248,7 +252,7 @@ const CategorySection = ({ categories, onRefresh, notify }) => {
                   placeholder="e.g. Full Stack Web Development"
                   value={name} 
                   onChange={e => setName(e.target.value)} 
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '0.95rem', outline: 'none', transition: '0.2s' }} 
+                  style={{ width: '100%', padding: '6px 12px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '0.95rem', outline: 'none', transition: '0.2s' }} 
                 />
               </div>
               
@@ -272,7 +276,18 @@ const CategorySection = ({ categories, onRefresh, notify }) => {
 };
 
 // --- 2. Course Section ---
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    ['clean']
+  ],
+};
+
 const CourseSection = ({ categories, courses, onRefresh, notify }) => {
+
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
@@ -321,47 +336,67 @@ const CourseSection = ({ categories, courses, onRefresh, notify }) => {
         <button onClick={() => { setIsEditing(false); setFormData({ category: '', course_type: 'live', title: '', description: '', demo_video_url: '', batch_no: '', price: '', start_date: '', schedule_days: '', support_class_schedule: '', total_seats: 50 }); setShowForm(true); }} style={{ padding: '10px 25px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700' }}>+ Add Course</button>
       </div>
 
-      {categories.map(cat => {
-        const catCourses = courses.filter(c => (c.category?.id || c.category) === cat.id);
-        if (catCourses.length === 0) return null;
-        return (
-          <div key={cat.id} style={{ marginBottom: '40px' }}>
-            <h4 style={{ background: '#f8fafc', padding: '15px 20px', borderRadius: '12px', borderLeft: '5px solid var(--black-accent)', marginBottom: '15px' }}>{cat.name}</h4>
-            <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', fontSize: '0.75rem' }}>
-                    <th style={{ padding: '0 15px' }}>Creation Date</th>
-                    <th style={{ padding: '0 15px' }}>Course Name</th>
-                    <th style={{ padding: '0 15px' }}>Start Date</th>
-                    <th style={{ padding: '0 15px' }}>Batch</th>
-                    <th style={{ padding: '0 15px' }}>Total Seats</th>
-                    <th style={{ padding: '0 15px' }}>Enrolled</th>
-                    <th style={{ padding: '0 15px' }}>Seats Left</th>
-                    <th style={{ padding: '0 15px' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {catCourses.map(c => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.75rem' }}>
-                      <td style={{ padding: '0 15px' }}>{formatDate(c.created_at)}</td>
-                      <td style={{ padding: '0 15px', fontWeight: '800' }}>{c.title}</td>
-                      <td style={{ padding: '0 15px' }}>{formatDate(c.start_date)}</td>
-                      <td style={{ padding: '0 15px' }}>{c.batch_no}</td>
-                      <td style={{ padding: '0 15px' }}>{c.total_seats}</td>
-                      <td style={{ padding: '0 15px' }}>{c.enrolled_count}</td>
-                      <td style={{ padding: '0 15px', fontWeight: 'bold', color: c.seats_left < 5 ? '#ef4444' : '#10b981' }}>{c.seats_left}</td>
-                      <td style={{ padding: '0 15px' }}>
-                        <button onClick={() => { setIsEditing(true); setCurrentId(c.id); setFormData({...c}); setShowForm(true); }} style={{ padding: '4px', borderRadius: '6px', background: 'white', border: '1px solid #e2e8f0', cursor: 'pointer' }}><Edit size={12}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })}
+      <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', fontSize: '0.75rem' }}>
+              <th style={{ padding: '5px' }}>Creation Date</th>
+              <th style={{ padding: '5px' }}>Course Name</th>
+              <th style={{ padding: '5px' }}>Start Date</th>
+              <th style={{ padding: '5px' }}>Batch</th>
+              <th style={{ padding: '5px' }}>Total Seats</th>
+              <th style={{ padding: '5px' }}>Enrolled</th>
+              <th style={{ padding: '5px' }}>Seats Left</th>
+              <th style={{ padding: '5px' }}>Status</th>
+              <th style={{ padding: '5px' }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...courses].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(c => {
+              const catName = c.category_name || (categories.find(cat => cat.id === (c.category?.id || c.category))?.name) || 'Uncategorized';
+              return (
+                <tr key={c.id} onClick={() => window.open(`/course/${c.id}`, '_blank')} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.75rem', cursor: 'pointer' }}>
+                  <td style={{ padding: '5px' }}>{formatDate(c.created_at)}</td>
+                  <td style={{ padding: '5px', fontWeight: '800' }}>{c.title}</td>
+                  <td style={{ padding: '5px' }}>{formatDate(c.start_date)}</td>
+                  <td style={{ padding: '5px' }}>{c.batch_no}</td>
+                  <td style={{ padding: '5px' }}>{c.total_seats}</td>
+                  <td style={{ padding: '5px' }}>{c.enrolled_count}</td>
+                  <td style={{ padding: '5px', fontWeight: 'bold', color: c.seats_left < 5 ? '#ef4444' : '#10b981' }}>{c.seats_left}</td>
+                  <td style={{ padding: '5px' }}>
+                    <button 
+                      onClick={async (e) => { 
+                        e.stopPropagation(); 
+                        try {
+                          await api.patch(`lms/courses/${c.id}/`, { is_published: !c.is_published });
+                          onRefresh();
+                          notify('success', 'Updated', c.is_published ? 'Course unpublished.' : 'Course published successfully.');
+                        } catch (err) {
+                          notify('error', 'Error', 'Failed to update status.');
+                        }
+                      }} 
+                      style={{ 
+                        padding: '4px 10px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: 'bold', border: 'none', cursor: 'pointer',
+                        background: c.is_published ? '#dcfce7' : '#f1f5f9', color: c.is_published ? '#16a34a' : '#64748b' 
+                      }}
+                    >
+                      {c.is_published ? 'Published' : 'Draft'}
+                    </button>
+                  </td>
+                  <td style={{ padding: '5px' }}>
+                    <button onClick={(e) => { e.stopPropagation(); setIsEditing(true); setCurrentId(c.id); setFormData({...c}); setShowForm(true); }} style={{ padding: '4px', borderRadius: '6px', background: 'white', border: '1px solid #e2e8f0', cursor: 'pointer' }}><Edit size={12}/></button>
+                  </td>
+                </tr>
+              );
+            })}
+            {courses.length === 0 && (
+              <tr>
+                <td colSpan="10" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>No courses found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <AnimatePresence>
       {showForm && (
@@ -380,42 +415,42 @@ const CourseSection = ({ categories, courses, onRefresh, notify }) => {
                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 0.6fr', gap: '15px' }}>
                   <div>
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Course Category</label>
-                    <select required value={formData.category?.id || formData.category} onChange={e => setFormData({...formData, category: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }}>
+                    <select required value={formData.category?.id || formData.category} onChange={e => setFormData({...formData, category: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }}>
                       <option value="">Select Category</option>
                       {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                     </select>
                   </div>
                   <div>
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Course Type</label>
-                    <select value={formData.course_type} onChange={e => setFormData({...formData, course_type: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }}>
+                    <select value={formData.course_type} onChange={e => setFormData({...formData, course_type: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }}>
                       <option value="live">Live</option>
                       <option value="pre_recorded">Pre-Recorded</option>
                     </select>
                   </div>
                   <div>
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Batch No</label>
-                    <input type="text" value={formData.batch_no} onChange={e => setFormData({...formData, batch_no: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
+                    <input type="text" value={formData.batch_no} onChange={e => setFormData({...formData, batch_no: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
                   </div>
                </div>
 
                <div>
                   <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Course Name</label>
-                  <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Enter course title" />
+                  <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Enter course title" />
                </div>
 
                <div>
                   <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Course Description</label>
-                  <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Course objectives and summary..." />
+                  <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Course objectives and summary..." />
                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.5fr', gap: '15px' }}>
                   <div>
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Demo Class Link</label>
-                    <input type="text" value={formData.demo_video_url} onChange={e => setFormData({...formData, demo_video_url: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="URL (YouTube/Vimeo)" />
+                    <input type="text" value={formData.demo_video_url} onChange={e => setFormData({...formData, demo_video_url: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="URL (YouTube/Vimeo)" />
                   </div>
                   <div>
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Total Seats</label>
-                    <input type="number" required value={formData.total_seats} onChange={e => setFormData({...formData, total_seats: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
+                    <input type="number" required value={formData.total_seats} onChange={e => setFormData({...formData, total_seats: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
                   </div>
                 </div>
 
@@ -424,22 +459,22 @@ const CourseSection = ({ categories, courses, onRefresh, notify }) => {
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Course Fees (BDT)</label>
                     <div style={{ position: 'relative' }}>
                       <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontWeight: '900', fontSize: '1rem' }}>৳</div>
-                      <input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} style={{ width: '100%', padding: '12px 12px 12px 35px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
+                      <input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} style={{ width: '100%', padding: '6px 8px 6px 30px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
                     </div>
                   </div>
                   <div>
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Start Date</label>
-                    <input type="date" value={formData.start_date} onChange={e => setFormData({...formData, start_date: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
+                    <input type="date" value={formData.start_date} onChange={e => setFormData({...formData, start_date: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} />
                   </div>
                   <div>
                     <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Live Class Schedule</label>
-                    <input type="text" value={formData.schedule_days} onChange={e => setFormData({...formData, schedule_days: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Sat, Mon, Wed 9 PM" />
+                    <input type="text" value={formData.schedule_days} onChange={e => setFormData({...formData, schedule_days: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Sat, Mon, Wed 9 PM" />
                   </div>
                </div>
 
                <div>
                   <label style={{ fontWeight: '700', marginBottom: '6px', fontSize: '0.85rem', display: 'block' }}>Support Class Schedule</label>
-                  <input type="text" value={formData.support_class_schedule} onChange={e => setFormData({...formData, support_class_schedule: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Fri 4 PM" />
+                  <input type="text" value={formData.support_class_schedule} onChange={e => setFormData({...formData, support_class_schedule: e.target.value})} style={{ width: '100%', padding: '4px 8px', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.9rem' }} placeholder="Fri 4 PM" />
                </div>
                
                <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
@@ -459,14 +494,19 @@ const CourseSection = ({ categories, courses, onRefresh, notify }) => {
 const CurriculumSection = ({ courses, categories, allUsers, notify, onRefresh }) => {
   const [selectedCatId, setSelectedCatId] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  
+  // Data States
   const [modules, setModules] = useState([]);
   const [moderatorId, setModeratorId] = useState('');
-  const [instructorIds, setInstructorIds] = useState([]);
   const [taIds, setTaIds] = useState([]);
   const [tools, setTools] = useState([]);
   const [requirements, setRequirements] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Form States
+  const [modForm, setModForm] = useState({ name: '', duration: '', instructor: '' });
+  const [toolForm, setToolForm] = useState({ name: '', image_base64: '' });
+  const [reqForm, setReqForm] = useState({ description: '' });
 
   // Filter courses by category
   const filteredCourses = selectedCatId 
@@ -477,14 +517,11 @@ const CurriculumSection = ({ courses, categories, allUsers, notify, onRefresh })
     if (selectedCourseId) {
       const course = courses.find(c => c.id == selectedCourseId);
       if (course) {
-        setModules(course.modules?.map(m => ({ name: m.name, duration: m.duration_weeks, instructor: m.instructor })) || []);
+        setModules(course.modules?.map(m => ({ id: m.id, name: m.name, duration: m.duration_weeks, instructor: m.instructor })) || []);
         setModeratorId(course.moderators?.[0] || '');
-        setInstructorIds(course.instructors || []);
         setTaIds(course.teaching_assistants || []);
         setTools(course.tools || []);
         setRequirements(course.requirements || []);
-        setProjects(course.course_projects || []);
-        // Auto-select category if not selected
         if (!selectedCatId) setSelectedCatId(course.category?.id || course.category);
       }
     }
@@ -497,51 +534,65 @@ const CurriculumSection = ({ courses, categories, allUsers, notify, onRefresh })
       const resolveId = (input) => {
         if (!input) return null;
         const user = allUsers.find(u => u.id == input || u.user_id_custom == input);
-        return user ? user.id : input; // Fallback to input if not found (let backend handle error)
+        return user ? user.id : input;
       };
 
       const summaryText = `This course consists of ${modules.length} intensive modules spanning over ${totalWeeks} weeks of professional training.`;
       
       await api.patch(`lms/courses/${selectedCourseId}/`, {
         modules: modules.map(m => ({ 
+          id: m.id,
           name: m.name, 
           duration_weeks: parseInt(m.duration) || 1, 
           instructor: resolveId(m.instructor) 
         })),
         moderators: moderatorId ? [resolveId(moderatorId)] : [],
         teaching_assistants: taIds.filter(id => id).map(id => resolveId(id)),
-        tools: tools.filter(t => t.name),
-        requirements: requirements.filter(r => r.description),
-        course_projects: projects.filter(p => p.name),
+        tools: tools.filter(t => t.name).map(t => ({ id: t.id, name: t.name, image_base64: t.image_base64 })),
+        requirements: requirements.filter(r => r.description).map(r => ({ id: r.id, description: r.description })),
         curriculum_summary: summaryText
       });
       notify('success', 'Saved!', 'Curriculum and summaries updated.');
       onRefresh();
     } catch (err) { 
       console.error("Curriculum save error:", err.response?.data || err);
-      const errorMsg = err.response?.data ? JSON.stringify(err.response.data) : 'Failed to save curriculum.';
-      notify('error', 'Error', errorMsg); 
+      notify('error', 'Error', 'Failed to save curriculum.'); 
     }
     finally { setLoading(false); }
   };
 
   const totalWeeks = modules.reduce((sum, m) => sum + parseInt(m.duration || 0), 0);
-  const totalClasses = modules.length * 4; // Placeholder calc
+  const totalClasses = modules.length * 4; 
+
+  const addModule = () => { if(modForm.name) { setModules([...modules, modForm]); setModForm({ name: '', duration: '', instructor: '' }); } };
+  const addTool = () => { if(toolForm.name) { setTools([...tools, toolForm]); setToolForm({ name: '', image_base64: '' }); } };
+  const addReq = () => { if(reqForm.description) { setRequirements([...requirements, reqForm]); setReqForm({ description: '' }); } };
+
+  const handleToolImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setToolForm({ ...toolForm, image_base64: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
-    <div className="glass-card" style={{ background: 'white', padding: '40px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
-      <h3 style={{ marginBottom: '30px' }}>Add Course Curriculum</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px' }}>
+    <div className="glass-card" style={{ background: 'white', padding: '30px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
+      <h3 style={{ marginBottom: '20px' }}>Course Curriculum Setup</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '30px' }}>
          <div>
-            <label style={{ fontWeight: '700' }}>Course Category</label>
-            <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <label style={{ fontWeight: '700', fontSize:'0.85rem' }}>Course Category</label>
+            <select value={selectedCatId} onChange={e => setSelectedCatId(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }}>
               <option value="">Filter by Category...</option>
               {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
          </div>
          <div>
-            <label style={{ fontWeight: '700' }}>Course Name</label>
-            <select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <label style={{ fontWeight: '700', fontSize:'0.85rem' }}>Course Name</label>
+            <select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }}>
               <option value="">Choose Course...</option>
               {filteredCourses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
@@ -551,85 +602,103 @@ const CurriculumSection = ({ courses, categories, allUsers, notify, onRefresh })
       {selectedCourseId && (
         <>
           {/* Summary Row */}
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '40px', flexWrap: 'wrap' }}>
-             <div style={{ padding: '10px 25px', borderRadius: '50px', background: '#f8fafc', border: '1.5px solid #e2e8f0', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}><Clock size={16}/> {totalWeeks} Weeks Total</div>
-             <div style={{ padding: '10px 25px', borderRadius: '50px', background: '#f8fafc', border: '1.5px solid #e2e8f0', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}><Package size={16}/> {modules.length} Modules</div>
-             <div style={{ padding: '10px 25px', borderRadius: '50px', background: '#f8fafc', border: '1.5px solid #e2e8f0', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}><Video size={16}/> {totalClasses} Live Classes</div>
-             <div style={{ padding: '10px 25px', borderRadius: '50px', background: '#f8fafc', border: '1.5px solid #e2e8f0', fontSize: '0.8rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}><Layout size={16}/> {projects.length} Projects</div>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+             <div style={{ padding: '6px 15px', borderRadius: '50px', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={14}/> {totalWeeks} Weeks Total</div>
+             <div style={{ padding: '6px 15px', borderRadius: '50px', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><Package size={14}/> {modules.length} Modules</div>
+             <div style={{ padding: '6px 15px', borderRadius: '50px', background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><Video size={14}/> {totalClasses} Live Classes</div>
           </div>
 
-          <SectionSubHeader title="Modules" onAdd={() => setModules([...modules, { name: '', duration: '', instructor: '' }])} icon={Package} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {modules.map((m, i) => (
-              <div key={i} style={{ background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px 2fr 40px', gap: '15px', alignItems: 'start' }}>
-                   <input placeholder="Module Name" value={m.name} onChange={e => { const u = [...modules]; u[i].name = e.target.value; setModules(u); }} style={{ padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                   <input placeholder="Weeks" type="number" value={m.duration} onChange={e => { const u = [...modules]; u[i].duration = e.target.value; setModules(u); }} style={{ padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                   <div>
-                     <input placeholder="Instructor ID" value={m.instructor} onChange={e => { const u = [...modules]; u[i].instructor = e.target.value; setModules(u); }} style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                     <UserPreview idInput={m.instructor} allUsers={allUsers} />
-                   </div>
-                   <button onClick={() => setModules(modules.filter((_, idx) => idx !== i))} style={{ color: '#ef4444', border: 'none', background: 'none' }}><Trash size={20}/></button>
-                </div>
+          <div style={{ marginBottom: '30px' }}>
+            <SectionSubHeader title="Modules" icon={Package} />
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <input placeholder="Module Name" value={modForm.name} onChange={e => setModForm({...modForm, name: e.target.value})} style={{ flex: 2, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+              <input placeholder="Weeks" type="number" value={modForm.duration} onChange={e => setModForm({...modForm, duration: e.target.value})} style={{ width: '80px', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+              <input placeholder="Instructor ID" value={modForm.instructor} onChange={e => setModForm({...modForm, instructor: e.target.value})} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+              <button onClick={addModule} style={{ padding: '6px 15px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize:'0.85rem', fontWeight:'600' }}>Add</button>
+            </div>
+            {modules.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {modules.map((m, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div>
+                      <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#1e293b' }}>{m.name}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>{m.duration} Weeks • Instructor ID: {m.instructor || 'Unassigned'}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                      <button onClick={() => { setModForm(m); setModules(modules.filter((_, idx) => idx !== i)); }} style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer' }}><Edit size={16}/></button>
+                      <button onClick={() => setModules(modules.filter((_, idx) => idx !== i))} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><Trash size={16}/></button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '40px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
              <div>
-                <label style={{ fontWeight: '900', marginBottom: '10px', display: 'block' }}>Add Moderator (ID)</label>
-                <input value={moderatorId} onChange={e => setModeratorId(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
-                <UserPreview idInput={moderatorId} allUsers={allUsers} />
+                <label style={{ fontWeight: '800', marginBottom: '8px', display: 'block', fontSize:'0.85rem' }}>Moderator (ID)</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                   <input value={moderatorId} onChange={e => setModeratorId(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+                </div>
              </div>
              <div>
-                <SectionSubHeader title="Add Teaching Assistant (ID)" onAdd={() => setTaIds([...taIds, ''])} icon={Users} />
+                <SectionSubHeader title="Teaching Assistants (IDs)" onAdd={() => setTaIds([...taIds, ''])} icon={Users} />
                 {taIds.map((id, i) => (
-                  <div key={i} style={{ marginBottom: '15px' }}>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <input placeholder="TA ID" value={id} onChange={e => { const u = [...taIds]; u[i] = e.target.value; setTaIds(u); }} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
-                      <button onClick={() => setTaIds(taIds.filter((_, idx) => idx !== i))} style={{ color: '#ef4444' }}><Trash size={18}/></button>
-                    </div>
-                    <UserPreview idInput={id} allUsers={allUsers} />
+                  <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                    <input placeholder="TA ID" value={id} onChange={e => { const u = [...taIds]; u[i] = e.target.value; setTaIds(u); }} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+                    <button onClick={() => setTaIds(taIds.filter((_, idx) => idx !== i))} style={{ color: '#ef4444', background:'none', border:'none', cursor:'pointer' }}><Trash size={16}/></button>
                   </div>
                 ))}
              </div>
           </div>
 
-          <SectionSubHeader title="Tools And Technologies" onAdd={() => setTools([...tools, { name: '', image: null }])} icon={Wrench} />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-            {tools.map((t, i) => (
-              <div key={i} style={{ width: '160px', padding: '20px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-                <input placeholder="Name" value={t.name} onChange={e => { const u = [...tools]; u[i].name = e.target.value; setTools(u); }} style={{ width: '100%', marginBottom: '12px', padding: '8px', borderRadius: '8px', border: '1px solid #f1f5f9' }} />
-                <div style={{ height: '80px', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={24} color="#94a3b8" /></div>
-              </div>
-            ))}
-          </div>
-
-          <SectionSubHeader title="Basic Requirements" onAdd={() => setRequirements([...requirements, { description: '', image: null }])} icon={CheckCircle} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
-            {requirements.map((r, i) => (
-              <div key={i} style={{ display: 'flex', gap: '20px', padding: '25px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <textarea placeholder="Requirement Description" value={r.description} onChange={e => { const u = [...requirements]; u[i].description = e.target.value; setRequirements(u); }} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #f1f5f9' }} />
-                <div style={{ width: '100px', height: '100px', background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={24} color="#94a3b8" /></div>
-              </div>
-            ))}
-          </div>
-
-          <SectionSubHeader title="Projects" onAdd={() => setProjects([...projects, { name: '', description: '', image: null, tools_learned: [] }])} icon={Layout} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '25px' }}>
-             {projects.map((p, i) => (
-               <div key={i} style={{ padding: '30px', background: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                     <input placeholder="Project Name" value={p.name} onChange={e => { const u = [...projects]; u[i].name = e.target.value; setProjects(u); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid #f1f5f9' }} />
-                     <div style={{ background: '#f8fafc', borderRadius: '12px', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={18}/> Main Image</div>
+          <div style={{ marginBottom: '30px' }}>
+            <SectionSubHeader title="Tools & Technologies" icon={Wrench} />
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <input placeholder="Tool Name" value={toolForm.name} onChange={e => setToolForm({...toolForm, name: e.target.value})} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+              <input type="file" accept="image/*" onChange={handleToolImageChange} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px dashed #cbd5e1', fontSize:'0.8rem' }} />
+              <button onClick={addTool} style={{ padding: '6px 15px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize:'0.85rem', fontWeight:'600' }}>Add Tool</button>
+            </div>
+            {tools.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {tools.map((t, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      {(t.image_base64 || t.image) ? <img src={t.image_base64 || t.image} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #cbd5e1' }} /> : <div style={{ width: '40px', height: '40px', background: '#e2e8f0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ImageIcon size={18} color="#94a3b8" /></div>}
+                      <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#1e293b' }}>{t.name}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                      <button onClick={() => { setToolForm(t); setTools(tools.filter((_, idx) => idx !== i)); }} style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer' }}><Edit size={16}/></button>
+                      <button onClick={() => setTools(tools.filter((_, idx) => idx !== i))} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><Trash size={16}/></button>
+                    </div>
                   </div>
-                  <textarea placeholder="Project Descriptions (Text with controls)" value={p.description} onChange={e => { const u = [...projects]; u[i].description = e.target.value; setProjects(u); }} style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #f1f5f9', marginBottom: '15px' }} />
-                  <div style={{ padding: '12px', background: '#f1f5f9', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '800' }}>+ Tools Learn (Multi-Image Upload)</div>
-               </div>
-             ))}
+                ))}
+              </div>
+            )}
           </div>
 
-          <button onClick={handleSave} disabled={loading} style={{ width: '100%', padding: '20px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '20px', fontWeight: '900', marginTop: '50px', fontSize: '1.1rem', boxShadow: '0 15px 30px rgba(0,0,0,0.2)' }}>{loading ? 'Finalizing...' : 'Finalize & Save Curriculum'}</button>
+          <div style={{ marginBottom: '30px' }}>
+            <SectionSubHeader title="Basic Requirements" icon={CheckCircle} />
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <input placeholder="Requirement Description" value={reqForm.description} onChange={e => setReqForm({...reqForm, description: e.target.value})} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+              <button onClick={addReq} style={{ padding: '6px 15px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize:'0.85rem', fontWeight:'600' }}>Add Req</button>
+            </div>
+            {requirements.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {requirements.map((r, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 18px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#334155' }}>{r.description}</div>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                      <button onClick={() => { setReqForm(r); setRequirements(requirements.filter((_, idx) => idx !== i)); }} style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer' }}><Edit size={16}/></button>
+                      <button onClick={() => setRequirements(requirements.filter((_, idx) => idx !== i))} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><Trash size={16}/></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button onClick={handleSave} disabled={loading} style={{ width: '100%', padding: '12px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', marginTop: '10px', fontSize: '1rem', cursor: 'pointer' }}>{loading ? 'Saving...' : 'Save Curriculum'}</button>
         </>
       )}
     </div>
@@ -637,56 +706,43 @@ const CurriculumSection = ({ courses, categories, allUsers, notify, onRefresh })
 };
 
 // --- 4. Module Management Section ---
-const ModuleManagementSection = ({ courses, onRefresh, notify }) => {
+const ModuleManagementSection = ({ courses, allUsers, notify }) => {
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedModuleIdx, setSelectedModuleIdx] = useState(0);
   const [weeks, setWeeks] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Form State
+  const [weekForm, setWeekForm] = useState({ week_number: 1, topic_title: '', quiz_count: 0, assignment_count: 0, is_disabled: false, extra_features: {}, live_classes: [] });
+  const [lcForm, setLcForm] = useState({ title: '', topics: '' });
+  const [efForm, setEfForm] = useState({ key: '', value: '' });
 
   useEffect(() => {
     if (selectedCourseId) {
       const course = courses.find(c => c.id == selectedCourseId);
       if (course && course.modules?.[selectedModuleIdx]) {
         setWeeks(course.modules[selectedModuleIdx].weeks || []);
+        setWeekForm(prev => ({ ...prev, week_number: (course.modules[selectedModuleIdx].weeks?.length || 0) + 1 }));
       } else { setWeeks([]); }
     }
   }, [selectedCourseId, selectedModuleIdx, courses]);
 
-  const handleAddWeek = () => {
-    setWeeks([...weeks, { week_number: weeks.length + 1, topic_title: '', live_classes: [], quiz_count: 0, assignment_count: 0, is_disabled: false, extra_features: {} }]);
-  };
-
-  const handleAddLiveClass = (wIdx) => {
-    const updated = [...weeks];
-    updated[wIdx].live_classes = updated[wIdx].live_classes || [];
-    updated[wIdx].live_classes.push({ title: '', topics: '' });
-    setWeeks(updated);
-  };
-
   const handleSave = async () => {
+    if (!selectedCourseId) return notify('error', 'Error', 'Select course first');
     setLoading(true);
     try {
       const course = courses.find(c => c.id == selectedCourseId);
-      if (!course) return notify('error', 'Error', 'Select course first');
-
-      // Validate weeks
-      const invalidWeek = weeks.find(w => !w.topic_title || w.topic_title.trim() === '');
-      if (invalidWeek) {
-        return notify('error', 'Validation Error', `Week ${invalidWeek.week_number} must have a Topic Title.`);
-      }
-
-      // Sanitize modules data before sending to backend
       const sanitizeModule = (m) => {
         const { id, instructor_name, weeks, ...rest } = m;
         return {
           ...rest,
-          instructor: m.instructor?.id || m.instructor, // Handle both object and ID
+          instructor: m.instructor?.id || m.instructor,
           weeks: (weeks || []).map(w => {
-            const { id: wId, live_classes, ...wRest } = w;
+            const { id: wId, live_classes, module, ...wRest } = w;
             return {
               ...wRest,
               live_classes: (live_classes || []).map(lc => {
-                const { id: lcId, ...lcRest } = lc;
+                const { id: lcId, week, ...lcRest } = lc;
                 return lcRest;
               })
             };
@@ -699,88 +755,308 @@ const ModuleManagementSection = ({ courses, onRefresh, notify }) => {
       );
 
       await api.patch(`lms/courses/${selectedCourseId}/`, { modules: updatedModules });
-      notify('success', 'Saved', 'Module and weeks updated successfully.');
-      onRefresh();
+      notify('success', 'Saved!', 'Module weeks updated successfully.');
     } catch (err) { 
-      console.error("Module save error:", err.response?.data || err);
-      const msg = err.response?.data ? JSON.stringify(err.response.data) : 'Save failed.';
-      notify('error', 'Error', msg); 
+      notify('error', 'Error', 'Failed to update module management.'); 
     }
     finally { setLoading(false); }
   };
 
-  const course = courses.find(c => c.id == selectedCourseId);
+  const addLiveClass = () => { if(lcForm.title) { setWeekForm({...weekForm, live_classes: [...weekForm.live_classes, lcForm]}); setLcForm({title: '', topics: ''}); } };
+  const addExtraFeature = () => { if(efForm.key && efForm.value) { setWeekForm({...weekForm, extra_features: {...weekForm.extra_features, [efForm.key]: efForm.value}}); setEfForm({key: '', value: ''}); } };
+  const saveWeekToTable = () => { if(weekForm.topic_title) { setWeeks([...weeks, weekForm]); setWeekForm({ week_number: weeks.length + 2, topic_title: '', quiz_count: 0, assignment_count: 0, is_disabled: false, extra_features: {}, live_classes: [] }); } };
 
   return (
-    <div className="glass-card" style={{ background: 'white', padding: '40px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
-      <h3 style={{ marginBottom: '30px' }}>Module Management</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px', marginBottom: '40px' }}>
-         <div><label style={{ fontWeight: '700' }}>Course Category</label><input readOnly value={course?.category_name || ''} style={{ width: '100%', padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }} /></div>
-         <div><label style={{ fontWeight: '700' }}>Course Name</label><select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }}><option value="">Select Course</option>{courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select></div>
-         <div><label style={{ fontWeight: '700' }}>Batch</label><input readOnly value={course?.batch_no || ''} style={{ width: '100%', padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }} /></div>
-         <div><label style={{ fontWeight: '700' }}>Modules</label><select value={selectedModuleIdx} onChange={e => setSelectedModuleIdx(e.target.value)} style={{ width: '100%', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px' }}>{course?.modules?.map((m, i) => <option key={i} value={i}>{m.name}</option>)}</select></div>
+    <div className="glass-card" style={{ background: 'white', padding: '30px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
+      <h3 style={{ marginBottom: '20px' }}>Module Weekly Curriculum Management</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '30px' }}>
+         <div>
+            <label style={{ fontWeight: '700', fontSize:'0.85rem' }}>Course Name</label>
+            <select value={selectedCourseId} onChange={e => { setSelectedCourseId(e.target.value); setSelectedModuleIdx(0); }} style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }}>
+              <option value="">Choose Course...</option>
+              {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+            </select>
+         </div>
+         {selectedCourseId && (
+           <div>
+              <label style={{ fontWeight: '700', fontSize:'0.85rem' }}>Target Module</label>
+              <select value={selectedModuleIdx} onChange={e => setSelectedModuleIdx(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }}>
+                {courses.find(c => c.id == selectedCourseId)?.modules?.map((m, i) => <option key={i} value={i}>{m.name || `Module ${i+1}`}</option>)}
+              </select>
+           </div>
+         )}
       </div>
 
-      <SectionSubHeader title="Add New Week" onAdd={handleAddWeek} icon={Calendar} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-        {weeks.map((w, wIdx) => (
-          <div key={wIdx} style={{ padding: '30px', background: w.is_disabled ? '#f1f5f9' : '#ffffff', border: '1px solid #e2e8f0', borderRadius: '24px', opacity: w.is_disabled ? 0.6 : 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 120px 120px 50px', gap: '20px' }}>
-               <input type="number" value={w.week_number} onChange={e => { const u = [...weeks]; u[wIdx].week_number = e.target.value; setWeeks(u); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }} placeholder="Week" />
-               <input type="text" value={w.topic_title} onChange={e => { const u = [...weeks]; u[wIdx].topic_title = e.target.value; setWeeks(u); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }} placeholder="Tropic Title" />
-               <input type="number" value={w.quiz_count} onChange={e => { const u = [...weeks]; u[wIdx].quiz_count = e.target.value; setWeeks(u); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }} placeholder="Quiz" />
-               <input type="number" value={w.assignment_count} onChange={e => { const u = [...weeks]; u[wIdx].assignment_count = e.target.value; setWeeks(u); }} style={{ padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }} placeholder="Assignment" />
-               <button onClick={() => { const u = [...weeks]; u[wIdx].is_disabled = !u[wIdx].is_disabled; setWeeks(u); }} style={{ background: 'none', border: 'none', color: w.is_disabled ? '#ef4444' : '#94a3b8', cursor: 'pointer' }}>{w.is_disabled ? <EyeOff size={24}/> : <Eye size={24}/>}</button>
+      {selectedCourseId && courses.find(c => c.id == selectedCourseId)?.modules?.[selectedModuleIdx] && (
+        <>
+          <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '30px' }}>
+            <h4 style={{ margin: '0 0 15px 0' }}>Add / Edit Week</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 100px 100px', gap: '10px', marginBottom: '15px' }}>
+               <input placeholder="Wk #" type="number" value={weekForm.week_number} onChange={e => setWeekForm({...weekForm, week_number: e.target.value})} style={{ padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+               <input placeholder="Topic Title" value={weekForm.topic_title} onChange={e => setWeekForm({...weekForm, topic_title: e.target.value})} style={{ padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+               <input placeholder="Quizzes" type="number" value={weekForm.quiz_count} onChange={e => setWeekForm({...weekForm, quiz_count: e.target.value})} style={{ padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} title="Quiz Count" />
+               <input placeholder="Assigns" type="number" value={weekForm.assignment_count} onChange={e => setWeekForm({...weekForm, assignment_count: e.target.value})} style={{ padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} title="Assignment Count" />
             </div>
             
-            <div style={{ marginTop: '25px', background: '#f8fafc', padding: '25px', borderRadius: '20px', border: '1px solid #f1f5f9' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <SectionSubHeader title="Live Classes" onAdd={() => handleAddLiveClass(wIdx)} icon={Video} />
-                <button type="button" onClick={() => {
-                  const u = [...weeks];
-                  u[wIdx].extra_features = u[wIdx].extra_features || {};
-                  const key = prompt("Extra Feature Name?");
-                  if(key) { u[wIdx].extra_features[key] = ""; setWeeks(u); }
-                }} style={{ padding: '8px 16px', borderRadius: '8px', background: 'white', border: '1px solid #e2e8f0', fontSize: '0.75rem', fontWeight: '900' }}>+ Extra Features</button>
-              </div>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
+               <label style={{ fontSize: '0.85rem', fontWeight: '600' }}><input type="checkbox" checked={weekForm.is_disabled} onChange={e => setWeekForm({...weekForm, is_disabled: e.target.checked})} style={{ marginRight: '5px' }} /> Week Disabled?</label>
+            </div>
 
-              {w.live_classes?.map((lc, lcIdx) => (
-                <div key={lcIdx} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 40px', gap: '15px', marginBottom: '15px' }}>
-                  <input placeholder="Class Title" value={lc.title} onChange={e => { const u = [...weeks]; u[wIdx].live_classes[lcIdx].title = e.target.value; setWeeks(u); }} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                  <textarea placeholder="Class Topics" value={lc.topics} onChange={e => { const u = [...weeks]; u[wIdx].live_classes[lcIdx].topics = e.target.value; setWeeks(u); }} style={{ padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                  <button onClick={() => { const u = [...weeks]; u[wIdx].live_classes.splice(lcIdx, 1); setWeeks(u); }} style={{ color: '#ef4444', border: 'none' }}><Trash size={18}/></button>
+            {/* Live Classes Sub-Form */}
+            <div style={{ marginBottom: '15px', padding: '15px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+               <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem' }}>Live Classes</h5>
+               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                 <input placeholder="Class Title" value={lcForm.title} onChange={e => setLcForm({...lcForm, title: e.target.value})} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+                 <input placeholder="Topics" value={lcForm.topics} onChange={e => setLcForm({...lcForm, topics: e.target.value})} style={{ flex: 2, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+                 <button onClick={addLiveClass} style={{ padding: '6px 10px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '8px', fontSize:'0.75rem', cursor: 'pointer' }}>Add Class</button>
+               </div>
+               {weekForm.live_classes.map((lc, idx) => (
+                 <div key={idx} style={{ fontSize: '0.8rem', padding: '4px 0', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
+                   <span><strong>{lc.title}</strong>: {lc.topics}</span>
+                   <button onClick={() => setWeekForm({...weekForm, live_classes: weekForm.live_classes.filter((_, i) => i !== idx)})} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><X size={14}/></button>
+                 </div>
+               ))}
+            </div>
+
+            {/* Extra Features Sub-Form */}
+            <div style={{ padding: '15px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+               <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem' }}>Extra Features</h5>
+               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                 <input placeholder="Key (e.g. Note)" value={efForm.key} onChange={e => setEfForm({...efForm, key: e.target.value})} style={{ flex: 1, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+                 <input placeholder="Value" value={efForm.value} onChange={e => setEfForm({...efForm, value: e.target.value})} style={{ flex: 2, padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+                 <button onClick={addExtraFeature} style={{ padding: '6px 10px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '8px', fontSize:'0.75rem', cursor: 'pointer' }}>Add Feature</button>
+               </div>
+               {Object.entries(weekForm.extra_features).map(([k, v], idx) => (
+                 <div key={idx} style={{ fontSize: '0.8rem', padding: '4px 0', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
+                   <span><strong>{k}</strong>: {v}</span>
+                   <button onClick={() => { const nf = {...weekForm.extra_features}; delete nf[k]; setWeekForm({...weekForm, extra_features: nf}); }} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><X size={14}/></button>
+                 </div>
+               ))}
+            </div>
+            
+            <button onClick={saveWeekToTable} style={{ marginTop: '15px', padding: '10px 20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Save Week to List</button>
+          </div>
+
+          <h4 style={{ margin: '0 0 15px 0' }}>Saved Weeks Overview</h4>
+          {weeks.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {weeks.map((w, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '1rem', color: '#1e293b' }}>Week {w.week_number}: {w.topic_title}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
+                      Live Classes: {w.live_classes?.length || 0} • Quizzes: {w.quiz_count} • Assignments: {w.assignment_count}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '700' }}>
+                      {w.is_disabled ? <span style={{ color: '#ef4444', background: '#fee2e2', padding: '4px 8px', borderRadius: '6px' }}>Disabled</span> : <span style={{ color: '#16a34a', background: '#dcfce7', padding: '4px 8px', borderRadius: '6px' }}>Active</span>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                      <button onClick={() => { setWeekForm(w); setWeeks(weeks.filter((_, idx) => idx !== i)); }} style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer' }}><Edit size={16}/></button>
+                      <button onClick={() => setWeeks(weeks.filter((_, idx) => idx !== i))} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><Trash size={16}/></button>
+                    </div>
+                  </div>
                 </div>
               ))}
-
-              {Object.keys(w.extra_features || {}).length > 0 && (
-                <div style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: '900', color: '#64748b', marginBottom: '10px' }}>ADDITIONAL OPTIONS</div>
-                  {Object.keys(w.extra_features).map(key => (
-                    <div key={key} style={{ display: 'flex', gap: '15px', marginBottom: '10px' }}>
-                      <div style={{ width: '150px', padding: '12px', background: '#e2e8f0', borderRadius: '10px', fontWeight: '800', fontSize: '0.85rem' }}>{key}</div>
-                      <input value={w.extra_features[key]} onChange={e => { const u = [...weeks]; u[wIdx].extra_features[key] = e.target.value; setWeeks(u); }} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
-                      <button onClick={() => { const u = [...weeks]; delete u[wIdx].extra_features[key]; setWeeks(u); }} style={{ color: '#ef4444', border: 'none' }}><X size={16}/></button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          </div>
-        ))}
-      </div>
-      <button onClick={handleSave} disabled={loading} style={{ width: '100%', padding: '20px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '900', marginTop: '40px', fontSize: '1rem' }}>{loading ? 'Saving...' : 'Save Module Management'}</button>
+          ) : (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '16px' }}>No weeks added yet.</div>
+          )}
+          
+          <button onClick={handleSave} disabled={loading} style={{ width: '100%', padding: '15px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '900', marginTop: '30px', fontSize: '1rem', cursor: 'pointer' }}>{loading ? 'Saving...' : 'Finalize & Save All Weeks'}</button>
+        </>
+      )}
     </div>
   );
 };
 
 // --- 5. Project Section ---
-const ProjectSection = ({ courses, notify, onRefresh }) => (
-  <div style={{ textAlign: 'center', padding: '80px', background: 'white', borderRadius: '32px', border: '2px dashed #e2e8f0' }}>
-    <Layout size={64} color="#94a3b8" style={{ marginBottom: '20px' }} />
-    <h3 style={{ margin: 0, color: '#1e293b' }}>Projects Portfolio Management</h3>
-    <p style={{ color: '#64748b', marginTop: '10px' }}>Manage end-to-end projects assigned to each course curriculum.</p>
-    <button className="btn-primary" style={{ padding: '15px 40px', borderRadius: '12px', marginTop: '20px' }}>+ Setup New Project</button>
-  </div>
-);
+const ProjectSection = ({ courses, notify }) => {
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Form State
+  const [projForm, setProjForm] = useState({ name: '', description: '' });
+
+  useEffect(() => {
+    if (selectedCourseId) {
+      const course = courses.find(c => c.id == selectedCourseId);
+      if (course) {
+        setProjects(course.course_projects || []);
+      }
+    }
+  }, [selectedCourseId, courses]);
+
+  const handleSave = async () => {
+    if (!selectedCourseId) return notify('error', 'Error', 'Select course first');
+    setLoading(true);
+    try {
+      await api.patch(`lms/courses/${selectedCourseId}/`, {
+        course_projects: projects.filter(p => p.name)
+      });
+      notify('success', 'Saved!', 'Projects updated successfully.');
+    } catch (err) { 
+      notify('error', 'Error', 'Failed to update projects.'); 
+    }
+    finally { setLoading(false); }
+  };
+
+  const addProject = () => { if(projForm.name) { setProjects([...projects, projForm]); setProjForm({ name: '', description: '' }); } };
+
+  return (
+    <div className="glass-card" style={{ background: 'white', padding: '30px', borderRadius: '32px', border: '1px solid #e2e8f0' }}>
+      <h3 style={{ marginBottom: '20px' }}>Projects Portfolio Management</h3>
+      <div style={{ marginBottom: '30px' }}>
+         <label style={{ fontWeight: '700', fontSize:'0.85rem' }}>Select Course</label>
+         <select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)} style={{ width: '100%', padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }}>
+           <option value="">Choose Course...</option>
+           {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+         </select>
+      </div>
+
+      {selectedCourseId && (
+        <>
+          <div style={{ marginBottom: '30px', background: '#f8fafc', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 15px 0' }}>Add / Edit Project</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+              <input placeholder="Project Name" value={projForm.name} onChange={e => setProjForm({...projForm, name: e.target.value})} style={{ padding: '6px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize:'0.85rem' }} />
+              <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}><ReactQuill theme="snow" modules={quillModules} value={projForm.description || ''} onChange={val => setProjForm({...projForm, description: val})} placeholder="Project Description..." /></div>
+              <button onClick={addProject} style={{ padding: '8px 15px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize:'0.85rem', fontWeight:'600', alignSelf: 'flex-start' }}>Add to List</button>
+            </div>
+          </div>
+
+          <h4 style={{ margin: '0 0 15px 0' }}>Assigned Projects</h4>
+          {projects.length > 0 ? (
+            <div style={{ overflowX: 'auto', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead style={{ background: '#f8fafc' }}>
+                  <tr>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Project Name</th>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Description Snippet</th>
+                    <th style={{ padding: '10px', width: '80px' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((p, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '10px', fontWeight: 'bold' }}>{p.name}</td>
+                      <td style={{ padding: '10px' }}>{p.description ? p.description.substring(0, 50) + '...' : 'No description'}</td>
+                      <td style={{ padding: '10px' }}>
+                        <button onClick={() => { setProjForm(p); setProjects(projects.filter((_, idx) => idx !== i)); }} style={{ color: '#3b82f6', border: 'none', background: 'none', cursor: 'pointer', marginRight: '10px' }}><Edit size={16}/></button>
+                        <button onClick={() => setProjects(projects.filter((_, idx) => idx !== i))} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer' }}><Trash size={16}/></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '16px' }}>No projects added yet.</div>
+          )}
+
+          <button onClick={handleSave} disabled={loading} style={{ width: '100%', padding: '15px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '900', marginTop: '30px', fontSize: '1rem', cursor: 'pointer' }}>{loading ? 'Saving...' : 'Finalize & Save Projects'}</button>
+        </>
+      )}
+    </div>
+  );
+};
+
+// --- 0. All Courses Section ---
+const AllCoursesSection = ({ courses, categories }) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const sortedCourses = React.useMemo(() => {
+    return [...courses].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [courses]);
+
+  const getDaysUntil = (dateStr) => {
+    if (!dateStr) return null;
+    const start = new Date(dateStr);
+    const diffTime = start - today;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <div className="glass-card" style={{ background: 'white', padding: '30px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+        <div style={{ marginBottom: '25px' }}>
+          <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900', color: '#1e293b' }}>All Courses</h3>
+        </div>
+        <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', fontSize: '0.8rem', color: '#475569' }}>
+                <th style={{ padding: '10px 15px', fontWeight: '800' }}>Course Name</th>
+                <th style={{ padding: '10px 15px', fontWeight: '800' }}>Type</th>
+                <th style={{ padding: '10px 15px', fontWeight: '800' }}>Batch</th>
+                <th style={{ padding: '10px 15px', fontWeight: '800' }}>Start Date</th>
+                <th style={{ padding: '10px 15px', fontWeight: '800' }}>Price</th>
+                <th style={{ padding: '10px 15px', fontWeight: '800' }}>Seats</th>
+                <th style={{ padding: '10px 15px', fontWeight: '800' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedCourses.map(c => {
+                const isPreRecorded = c.course_type === 'pre_recorded';
+                const startDate = c.start_date ? new Date(c.start_date) : null;
+                const isUpcoming = startDate && startDate >= today;
+                const daysLeft = getDaysUntil(c.start_date);
+
+                return (
+                  <tr key={c.id} onClick={() => window.open(`/course/${c.id}`, '_blank')} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem', background: isUpcoming && !isPreRecorded ? 'rgba(99, 102, 241, 0.02)' : 'transparent', cursor: 'pointer' }}>
+                    <td style={{ padding: '15px', fontWeight: '800', color: '#0f172a' }}>{c.title}</td>
+                    <td style={{ padding: '15px', fontWeight: '800', color: '#6366f1' }}>{isPreRecorded ? 'Pre-Recorded' : 'Live'}</td>
+                    <td style={{ padding: '15px', color: '#475569', fontWeight: '600' }}>{isPreRecorded ? '-' : `Batch ${c.batch_no || '01'}`}</td>
+                    <td style={{ padding: '15px', color: '#0f172a', fontWeight: '500' }}>
+                      {!isPreRecorded && c.start_date ? (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span>{formatDate(c.start_date)}</span>
+                          {isUpcoming && (
+                            <span style={{ fontSize: '0.7rem', color: '#6366f1', fontWeight: '600' }}>({daysLeft} days to go)</span>
+                          )}
+                        </div>
+                      ) : isPreRecorded ? 'N/A' : 'TBA'}
+                    </td>
+                    <td style={{ padding: '15px', fontWeight: '800', color: '#0f172a' }}>৳{c.price || '0'}</td>
+                    <td style={{ padding: '15px', color: '#475569' }}>
+                      {!isPreRecorded ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ fontWeight: '700' }}>{c.enrolled_count || 0}</span><span style={{ color: '#94a3b8' }}>/</span><span>{c.total_seats || 0}</span></div>
+                      ) : '-'}
+                    </td>
+                    <td style={{ padding: '15px' }}>
+                      {isPreRecorded ? (
+                        <span style={{ background: 'rgba(148, 163, 184, 0.12)', color: '#475569', padding: '6px 12px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: '800' }}>Available</span>
+                      ) : isUpcoming ? (
+                        <span style={{ background: 'rgba(99, 102, 241, 0.12)', color: '#6366f1', padding: '6px 12px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: '800' }}>Upcoming</span>
+                      ) : (
+                        <span style={{ background: 'rgba(74, 222, 128, 0.12)', color: '#15803d', padding: '6px 12px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: '800' }}>Ongoing / Past</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {sortedCourses.length === 0 && (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>No courses found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default CourseManagement;
+
+
+
+
+
+
+
+

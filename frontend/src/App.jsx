@@ -21,6 +21,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import Resources from './pages/Resources';
 import LiveClasses from './pages/LiveClasses';
 import ClassJoining from './pages/ClassJoining';
+import Wishlist from './pages/Wishlist';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useContext(AuthContext);
@@ -60,6 +61,7 @@ const AppRoutes = () => {
           <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
           <Route path="/live-classes" element={<ProtectedRoute><LiveClasses /></ProtectedRoute>} />
           <Route path="/class-joining" element={<ProtectedRoute><ClassJoining /></ProtectedRoute>} />
+          <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
           
           <Route path="/profile" element={
             <ProtectedRoute>

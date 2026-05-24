@@ -1,8 +1,11 @@
+import base64
+from django.core.files.base import ContentFile
 from rest_framework import serializers
 from .models import (
     Category, Course, Enrollment, Batch, Module, ModuleWeek, 
     LiveClass, Lesson, Testimonial, ToolTech, CourseRequirement, 
-    Project, ProjectToolImage
+    Project, ProjectToolImage, Wishlist,
+    WeekItem, Quiz, QuizQuestion, QuizSubmission, Assignment, AssignmentSubmission
 )
 from users.serializers import UserSerializer
 
@@ -16,6 +19,7 @@ class CategorySerializer(serializers.ModelSerializer):
         return obj.courses.count()
 
 class ToolTechSerializer(serializers.ModelSerializer):
+    image_base64 = serializers.CharField(required=False, allow_blank=True, allow_null=True, write_only=True)
     class Meta:
         model = ToolTech
         fields = '__all__'
@@ -46,8 +50,39 @@ class LessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = '__all__'
 
+class WeekItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WeekItem
+        fields = '__all__'
+
+class QuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Quiz
+        fields = '__all__'
+
+class QuizQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizQuestion
+        fields = '__all__'
+
+class QuizSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizSubmission
+        fields = '__all__'
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Assignment
+        fields = '__all__'
+
+class AssignmentSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignmentSubmission
+        fields = '__all__'
+
 class ModuleWeekSerializer(serializers.ModelSerializer):
     live_classes = LiveClassSerializer(many=True, required=False)
+    items = WeekItemSerializer(many=True, required=False)
     class Meta:
         model = ModuleWeek
         fields = '__all__'
@@ -107,28 +142,48 @@ class CourseSerializer(serializers.ModelSerializer):
 
         # Handle Tools
         for tool in tools_data:
-            ToolTech.objects.create(course=course, **tool)
+            tool.pop('course', None)
+            image_base64 = tool.pop('image_base64', None)
+            tool_obj = ToolTech.objects.create(course=course, **tool)
+            if image_base64 and ';base64,' in image_base64:
+                try:
+                    format, imgstr = image_base64.split(';base64,') 
+                    ext = format.split('/')[-1]
+                    tool_obj.image = ContentFile(base64.b64decode(imgstr), name=f"{tool_obj.name}.{ext}")
+                    tool_obj.save()
+                except Exception as e:
+                    pass
         
         # Handle Requirements
         for req in reqs_data:
+            req.pop('course', None)
             CourseRequirement.objects.create(course=course, **req)
             
         # Handle Projects
         for proj in projects_data:
+            proj.pop('course', None)
             tools_images_list = proj.pop('tools_images_list', [])
             project_obj = Project.objects.create(course=course, **proj)
             for img in tools_images_list:
+                img.pop('project', None)
                 ProjectToolImage.objects.create(project=project_obj, **img)
 
         # Handle Modules
         for mod in modules_data:
             weeks_data = mod.pop('weeks', [])
+            mod.pop('course', None)
             module_obj = Module.objects.create(course=course, **mod)
             for week in weeks_data:
                 lc_data = week.pop('live_classes', [])
+                items_data = week.pop('items', [])
+                week.pop('module', None)
                 week_obj = ModuleWeek.objects.create(module=module_obj, **week)
                 for lc in lc_data:
+                    lc.pop('week', None)
                     LiveClass.objects.create(week=week_obj, **lc)
+                for item in items_data:
+                    item.pop('week', None)
+                    WeekItem.objects.create(week=week_obj, **item)
                     
         return course
 
@@ -155,36 +210,83 @@ class CourseSerializer(serializers.ModelSerializer):
 
         # Handle Tools
         if tools_data is not None:
-            instance.tools.all().delete()
+            existing_tool_ids = [t.id for t in instance.tools.all()]
+            incoming_tool_ids = [t.get('id') for t in tools_data if t.get('id')]
+            
+            for tool_id in existing_tool_ids:
+                if tool_id not in incoming_tool_ids:
+                    ToolTech.objects.filter(id=tool_id).delete()
+
             for tool in tools_data:
-                ToolTech.objects.create(course=instance, **tool)
+                tool_id = tool.pop('id', None)
+                tool.pop('course', None)
+                image_base64 = tool.pop('image_base64', None)
+                tool.pop('image', None)
+                
+                if tool_id and ToolTech.objects.filter(id=tool_id, course=instance).exists():
+                    tool_obj = ToolTech.objects.get(id=tool_id)
+                    for k, v in tool.items():
+                        setattr(tool_obj, k, v)
+                    tool_obj.save()
+                else:
+                    tool_obj = ToolTech.objects.create(course=instance, **tool)
+                    
+                if image_base64 and ';base64,' in image_base64:
+                    try:
+                        format, imgstr = image_base64.split(';base64,') 
+                        ext = format.split('/')[-1]
+                        tool_obj.image = ContentFile(base64.b64decode(imgstr), name=f"{tool_obj.name}.{ext}")
+                        tool_obj.save()
+                    except Exception as e:
+                        pass
         
         # Handle Requirements
         if reqs_data is not None:
-            instance.requirements.all().delete()
+            existing_req_ids = [r.id for r in instance.requirements.all()]
+            incoming_req_ids = [r.get('id') for r in reqs_data if r.get('id')]
+            
+            for req_id in existing_req_ids:
+                if req_id not in incoming_req_ids:
+                    CourseRequirement.objects.filter(id=req_id).delete()
+
             for req in reqs_data:
-                CourseRequirement.objects.create(course=instance, **req)
+                req_id = req.pop('id', None)
+                req.pop('course', None)
+                
+                if req_id and CourseRequirement.objects.filter(id=req_id, course=instance).exists():
+                    CourseRequirement.objects.filter(id=req_id).update(**req)
+                else:
+                    CourseRequirement.objects.create(course=instance, **req)
                 
         # Handle Projects
         if projects_data is not None:
             instance.course_projects.all().delete()
             for proj in projects_data:
+                proj.pop('course', None)
                 tools_images_list = proj.pop('tools_images_list', [])
                 project_obj = Project.objects.create(course=instance, **proj)
                 for img in tools_images_list:
+                    img.pop('project', None)
                     ProjectToolImage.objects.create(project=project_obj, **img)
 
-        # Handle Modules (Preserve existing logic but acknowledge it clears sub-data)
+        # Handle Modules (Update existing, create new, delete missing)
         if modules_data is not None:
-            instance.modules.all().delete()
+            existing_module_ids = [m.id for m in instance.modules.all()]
+            incoming_module_ids = [m.get('id') for m in modules_data if m.get('id')]
+            
+            # Delete modules that are not in the incoming data
+            for module_id in existing_module_ids:
+                if module_id not in incoming_module_ids:
+                    Module.objects.filter(id=module_id).delete()
+            
             for mod in modules_data:
-                weeks_data = mod.pop('weeks', [])
-                module_obj = Module.objects.create(course=instance, **mod)
-                for week in weeks_data:
-                    lc_data = week.pop('live_classes', [])
-                    week_obj = ModuleWeek.objects.create(module=module_obj, **week)
-                    for lc in lc_data:
-                        LiveClass.objects.create(week=week_obj, **lc)
+                mod_id = mod.pop('id', None)
+                mod.pop('weeks', [])
+                mod.pop('course', None)
+                if mod_id and Module.objects.filter(id=mod_id, course=instance).exists():
+                    Module.objects.filter(id=mod_id).update(**mod)
+                else:
+                    Module.objects.create(course=instance, **mod)
 
         return instance
 
@@ -199,3 +301,10 @@ class TestimonialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testimonial
         fields = '__all__'
+
+class WishlistSerializer(serializers.ModelSerializer):
+    course_details = CourseSerializer(source='course', read_only=True)
+    class Meta:
+        model = Wishlist
+        fields = '__all__'
+        read_only_fields = ['user']

@@ -2,6 +2,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -21,6 +22,7 @@ from .serializers import (
 
 class SiteSettingsView(APIView):
     permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     def get(self, request):
         settings_obj = SiteSettings.objects.first()
         if not settings_obj:
@@ -35,6 +37,11 @@ class SiteSettingsView(APIView):
         settings_obj = SiteSettings.objects.first()
         if not settings_obj:
             settings_obj = SiteSettings.objects.create()
+
+        image_fields = ['site_logo', 'favicon', 'hero_image', 'facebook_icon', 'twitter_icon', 'instagram_icon', 'linkedin_icon', 'youtube_icon']
+        for field in image_fields:
+            if request.data.get(f'clear_{field}') == 'true':
+                setattr(settings_obj, field, None)
         
         serializer = SiteSettingsSerializer(settings_obj, data=request.data, partial=True)
         if serializer.is_valid():
@@ -56,8 +63,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 from payments.models import Transaction
 from payments.serializers import TransactionSerializer
-
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -264,3 +269,21 @@ class PasswordResetConfirmView(APIView):
             user.save()
             return Response({'message': 'Success'})
         return Response({'error': 'Invalid'}, status=400)
+
+from .models import Notification
+from .serializers import NotificationSerializer
+from rest_framework.decorators import action
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user).order_by('-created_at')
+
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'status': 'read'})

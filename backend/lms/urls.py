@@ -13,7 +13,14 @@ from .views import (
     TestimonialViewSet,
     ToolTechViewSet,
     CourseRequirementViewSet,
-    ProjectViewSet
+    ProjectViewSet,
+    WishlistViewSet,
+    WeekItemViewSet,
+    QuizViewSet,
+    QuizQuestionViewSet,
+    QuizSubmissionViewSet,
+    AssignmentViewSet,
+    AssignmentSubmissionViewSet
 )
 
 router = DefaultRouter()
@@ -29,6 +36,13 @@ router.register(r'live-classes', LiveClassViewSet)
 router.register(r'lessons', LessonViewSet)
 router.register(r'testimonials', TestimonialViewSet)
 router.register(r'enrollments', EnrollmentViewSet, basename='enrollment')
+router.register(r'wishlists', WishlistViewSet, basename='wishlist')
+router.register(r'week-items', WeekItemViewSet)
+router.register(r'quizzes', QuizViewSet)
+router.register(r'quiz-questions', QuizQuestionViewSet)
+router.register(r'quiz-submissions', QuizSubmissionViewSet)
+router.register(r'assignments', AssignmentViewSet)
+router.register(r'assignment-submissions', AssignmentSubmissionViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

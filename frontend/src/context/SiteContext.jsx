@@ -7,8 +7,8 @@ export const SiteContext = createContext();
 
 export const SiteProvider = ({ children }) => {
   const [settings, setSettings] = useState({
-    site_name: 'LMS Platform',
-    website_title: 'LMS Platform - Learn Skills Live',
+    site_name: '',
+    website_title: '',
     site_logo: null,
     favicon: null,
     footer_description: "",
@@ -33,6 +33,7 @@ export const SiteProvider = ({ children }) => {
       const formatUrl = (url) => url && url.startsWith('/') ? `${BASE_URL}${url}` : url;
       data.site_logo = formatUrl(data.site_logo);
       data.favicon = formatUrl(data.favicon);
+      data.hero_image = formatUrl(data.hero_image);
       
       ['facebook_icon', 'twitter_icon', 'instagram_icon', 'linkedin_icon', 'youtube_icon'].forEach(k => {
         data[k] = formatUrl(data[k]);

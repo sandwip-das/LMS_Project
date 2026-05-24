@@ -11,11 +11,11 @@ const DashboardLayout = ({ sidebar, children }) => {
       {/* Sidebar - Left Div */}
       {sidebar && (
         <div style={{ 
-          width: '300px', 
-          minWidth: '300px',
+          width: '250px',
+          minWidth: '250px',
           background: '#ffffff',
           borderRight: '1px solid #e2e8f0',
-          padding: '0', 
+          padding: '20px',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 50
@@ -27,7 +27,7 @@ const DashboardLayout = ({ sidebar, children }) => {
       {/* Main Content - Right Div */}
       <div style={{ 
         flex: 1, 
-        padding: '0', // No padding around the div
+        padding: '5px', // 5px padding around the div
         position: 'relative',
         overflowX: 'hidden'
       }}>

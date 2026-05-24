@@ -10,6 +10,7 @@ class User(AbstractUser):
         ('student', 'Student'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
+    email = models.EmailField(unique=True)
     mobile_number = models.CharField(max_length=15, unique=True, blank=True, null=True)
     user_id_custom = models.CharField(max_length=50, unique=True, blank=True, null=True) # For custom User ID
     
@@ -84,14 +85,14 @@ class GuestUser(models.Model):
         return self.email_or_username
 
 class SiteSettings(models.Model):
-    site_name = models.CharField(max_length=100, default='LMS Platform')
-    website_title = models.CharField(max_length=200, default='LMS Platform - Learn Skills Live')
+    site_name = models.CharField(max_length=100, blank=True, null=True)
+    website_title = models.CharField(max_length=200, blank=True, null=True)
     site_logo = models.ImageField(upload_to='site/', blank=True, null=True)
     favicon = models.ImageField(upload_to='site/', blank=True, null=True)
-    footer_description = models.TextField(default="Bangladesh's premier live-learning platform. Master high-demand tech skills with industry experts.")
-    copyright_text = models.CharField(max_length=255, default='© {year} LMS Platform. All Rights Reserved.')
-    contact_email = models.EmailField(default='support@lmsplatform.com')
-    contact_address = models.TextField(default='Ka-6/a, Navana Sylvania, Baridhara Road, Nadda, Gulshan-2, Dhaka-1212')
+    footer_description = models.TextField(blank=True, null=True)
+    copyright_text = models.CharField(max_length=255, blank=True, null=True)
+    contact_email = models.EmailField(blank=True, null=True)
+    contact_address = models.TextField(blank=True, null=True)
     facebook_url = models.URLField(blank=True, null=True)
     facebook_icon = models.ImageField(upload_to='site/icons/', blank=True, null=True)
     twitter_url = models.URLField(blank=True, null=True)
@@ -102,6 +103,12 @@ class SiteSettings(models.Model):
     linkedin_icon = models.ImageField(upload_to='site/icons/', blank=True, null=True)
     youtube_url = models.URLField(blank=True, null=True)
     youtube_icon = models.ImageField(upload_to='site/icons/', blank=True, null=True)
+    
+    hero_badge_text = models.CharField(max_length=255, blank=True, null=True)
+    hero_heading = models.CharField(max_length=255, blank=True, null=True)
+    hero_highlighted_word = models.CharField(max_length=50, blank=True, null=True, help_text="Word in the heading to highlight")
+    hero_subheading = models.TextField(blank=True, null=True)
+    hero_image = models.ImageField(upload_to='site/', blank=True, null=True)
 
     class Meta:
         verbose_name = "Site Settings"
@@ -110,3 +117,12 @@ class SiteSettings(models.Model):
     def __str__(self):
         return self.site_name
 
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.title}"

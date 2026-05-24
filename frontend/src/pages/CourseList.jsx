@@ -1,20 +1,51 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
+import { SiteContext } from '../context/SiteContext';
 import { 
   Search, Users, PlayCircle, Star, ArrowRight, CheckCircle, 
   ChevronLeft, ChevronRight, Layout, Book, Code, Monitor, Briefcase,
-  Calendar, UserPlus, Clock, Tv, Heart, GraduationCap, Zap
+  Calendar, UserPlus, Clock, Tv, Heart, GraduationCap, Zap, Radio, User
 } from 'lucide-react';
 
 const CourseList = () => {
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [catStartIndex, setCatStartIndex] = useState(0);
+  const [wishlist, setWishlist] = useState([]);
   const { user } = useContext(AuthContext);
+  const { settings } = useContext(SiteContext);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category');
+  const categoryScrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const handleScroll = () => {
+    if (categoryScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = categoryScrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
+    }
+  };
+
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+    return () => window.removeEventListener('resize', handleScroll);
+  }, [categories]);
+
+  const scrollCategories = (direction) => {
+    if (categoryScrollRef.current) {
+      const scrollAmount = 300;
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,11 +61,47 @@ const CourseList = () => {
       }
     };
     fetchData();
-  }, []);
+    if (user) {
+      api.get('lms/wishlists/').then(res => setWishlist(res.data)).catch(console.error);
+    }
+  }, [user]);
+
+  const toggleWishlist = async (courseId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) return alert("Please log in to save courses to your wishlist.");
+    
+    const existingItem = wishlist.find(w => w.course === courseId);
+    try {
+      if (existingItem) {
+        await api.delete(`lms/wishlists/${existingItem.id}/`);
+        setWishlist(wishlist.filter(w => w.id !== existingItem.id));
+      } else {
+        const res = await api.post('lms/wishlists/', { course: courseId });
+        setWishlist([...wishlist, res.data]);
+      }
+    } catch (err) {
+      console.error("Wishlist error", err);
+    }
+  };
+
+  // Sync selectedCategory with categoryParam from URL search params
+  useEffect(() => {
+    if (categoryParam && categories.length > 0) {
+      const matchedCat = categories.find(c => c.id.toString() === categoryParam);
+      if (matchedCat) {
+        setSelectedCategory(matchedCat.name);
+      } else {
+        setSelectedCategory(categories[0]?.name || '');
+      }
+    } else if (!categoryParam && categories.length > 0) {
+      setSelectedCategory(categories[0]?.name || '');
+    }
+  }, [categoryParam, categories]);
 
   const filteredCourses = useMemo(() => {
     let filtered = courses;
-    if (selectedCategory !== 'All') {
+    if (selectedCategory) {
       const cat = categories.find(c => c.name === selectedCategory);
       if (cat) {
         filtered = courses.filter(c => c.category === cat.id);
@@ -46,17 +113,8 @@ const CourseList = () => {
     return filtered;
   }, [courses, selectedCategory, categories, searchQuery]);
 
-  // Category Slider Logic
-  const visibleCategories = categories.slice(catStartIndex, catStartIndex + 5);
-  const showRightArrow = categories.length > catStartIndex + 5;
-  const showLeftArrow = catStartIndex > 0;
-
-  const handleNextCat = () => {
-    if (showRightArrow) setCatStartIndex(catStartIndex + 1);
-  };
-  const handlePrevCat = () => {
-    if (showLeftArrow) setCatStartIndex(catStartIndex - 1);
-  };
+  const liveCoursesList = filteredCourses.filter(c => c.course_type !== 'pre_recorded');
+  const preRecordedCoursesList = filteredCourses.filter(c => c.course_type === 'pre_recorded');
 
   const getDaysLeft = (startDate) => {
     if (!startDate) return 'TBA';
@@ -79,29 +137,41 @@ const CourseList = () => {
   };
 
   return (
-    <div className="animate-fade-in" style={{ background: '#fdfdfd', minHeight: '100vh', paddingBottom: '100px', width: '100%' }}>
+    <div className="animate-fade-in" style={{ background: '#fdfdfd', minHeight: '100vh', paddingBottom: '100px', width: '100%', boxSizing: 'border-box' }}>
       
       {/* Premium Hero Section - Full Width */}
       <section style={{ 
         background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         color: 'white',
-        padding: '30px 5% 120px',
         width: '100%',
-        borderRadius: '50px 50px',
         position: 'relative',
         overflow: 'hidden'
       }}>
-        <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4rem' }}>
+        <div style={{ width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '30px 50px 120px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4rem', boxSizing: 'border-box' }}>
           <div style={{ flex: '1' }}>
-             <div className="badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)', marginBottom: '20px', padding: '8px 16px', borderRadius: '100px', fontWeight: '700' }}>
-               # Online Learning Platform in Bangladesh
-             </div>
-             <h1 style={{ fontSize: '3.2rem', fontWeight: '900', lineHeight: '1.1', marginBottom: '20px', letterSpacing: '-0.04em' }}>
-               Skills that <span style={{ color: '#818cf8' }}>Launch</span> <br /> Your Career.
-             </h1>
-             <p style={{ fontSize: '1.25rem', color: '#94a3b8', marginBottom: '40px', maxWidth: '600px', lineHeight: '1.6' }}>
-               Join thousands of students mastering high-demand skills through live mentorship and industry-grade projects.
-             </p>
+             {settings.hero_badge_text && (
+               <div style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '6px 16px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', color: '#818cf8', fontWeight: '600', fontSize: '0.9rem', marginBottom: '20px' }}>
+                 {settings.hero_badge_text}
+               </div>
+             )}
+             {settings.hero_heading && (
+               <h1 style={{ fontSize: '3.2rem', fontWeight: '900', lineHeight: '1.1', marginBottom: '20px', letterSpacing: '-0.04em' }}>
+                 {(() => {
+                    const heading = settings.hero_heading;
+                    const highlight = settings.hero_highlighted_word;
+                    if (heading.includes(highlight) && highlight) {
+                      const parts = heading.split(highlight);
+                      return <>{parts[0]}<span style={{ color: '#818cf8' }}>{highlight}</span>{parts.slice(1).join(highlight)}</>;
+                    }
+                    return heading;
+                 })()}
+               </h1>
+             )}
+             {settings.hero_subheading && (
+               <p style={{ fontSize: '1.25rem', color: '#94a3b8', marginBottom: '40px', maxWidth: '600px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                 {settings.hero_subheading}
+               </p>
+             )}
              
              {/* Search Bar */}
              <div style={{ 
@@ -165,28 +235,31 @@ const CourseList = () => {
           </div>
 
           <div style={{ flex: '1', position: 'relative' }}>
-             <div style={{ 
-               width: '100%', 
-               aspectRatio: '16 / 10', 
-               background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 100%)',
-               borderRadius: '40px',
-               border: '2px solid rgba(255,255,255,0.1)',
-               display: 'flex',
-               alignItems: 'center',
-               justifyContent: 'center'
-             }}>
-               <img 
-                 src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=600" 
-                 alt="Students" 
-                 style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '40px', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}
-               />
-             </div>
+             {settings.hero_image && (
+               <div style={{ 
+                 width: '100%', 
+                 aspectRatio: '16 / 10', 
+                 background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 100%)',
+                 borderRadius: '40px',
+                 border: '2px solid rgba(255,255,255,0.1)',
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center'
+               }}>
+                 <img 
+                   src={settings.hero_image} 
+                   alt="Hero" 
+                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '40px', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}
+                 />
+               </div>
+             )}
           </div>
         </div>
       </section>
 
       {/* Feature Highlights Bar - Full Width */}
-      <div style={{ width: '100%', padding: '0 5%', marginTop: '-50px', marginBottom: '60px', position: 'relative', zIndex: 10 }}>
+      <div style={{ width: '100%', marginTop: '-50px', marginBottom: '60px', position: 'relative', zIndex: 10 }}>
+        <div style={{ width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 50px', boxSizing: 'border-box' }}>
          <div style={{ background: 'white', padding: '10px', borderRadius: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', border: '1px solid #f1f5f9' }}>
             {[
               { icon: <Zap color="#818cf8"/>, title: 'Live Classes', sub: 'Interactive sessions' },
@@ -203,150 +276,241 @@ const CourseList = () => {
               </div>
             ))}
          </div>
+        </div>
       </div>
 
-      {/* Category Slider Section - Full Width */}
-      <section style={{ width: '90%', padding: '0 5%', marginBottom: '60px' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0f172a', marginBottom: '30px' }}>Explore Categories</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          {showLeftArrow && (
-            <button onClick={handlePrevCat} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-              <ChevronLeft size={20} color="var(--accent-primary)" />
-            </button>
-          )}
-
-          <div style={{ display: 'flex', gap: '20px', flex: 1, overflow: 'hidden' }}>
+      {/* Category Section - Full Width */}
+      <section style={{ width: '100%', marginBottom: '40px' }}>
+        <div style={{ width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 50px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
+          <Radio color="#ef4444" size={28} />
+          <h2 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0f172a', margin: 0 }}>Upcoming Live Course</h2>
+        </div>
+        
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          {canScrollLeft && categories.length > 4 && (
             <div 
-              onClick={() => setSelectedCategory('All')}
+              onClick={() => scrollCategories('left')}
               style={{ 
-                flex: '0 0 calc(20% - 16px)',
-                padding: '10px 10px',
-                background: selectedCategory === 'All' ? 'rgba(99, 102, 241, 0.05)' : 'white', 
-                border: '1px solid',
-                borderColor: selectedCategory === 'All' ? 'var(--accent-primary)' : '#e2e8f0',
-                borderRadius: '16px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '15px', 
-                cursor: 'pointer',
-                height: '64px',
-                transition: '0.3s'
+                position: 'absolute', left: '-20px', top: '50%', transform: 'translateY(-50%)',
+                background: 'white', borderRadius: '50%', width: '40px', height: '40px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', zIndex: 10, border: '1px solid #e2e8f0'
               }}
             >
-              <div style={{ color: 'var(--accent-primary)' }}><Layout size={24} /></div>
-              <div>
-                <div style={{ fontWeight: '800', fontSize: '1rem', color: '#0f172a', lineHeight: '1.2' }}>All Courses</div>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{courses.length.toString().padStart(2, '0')} Courses</div>
-              </div>
+              <ChevronLeft size={20} color="#0f172a" />
             </div>
-
-            {visibleCategories.map(cat => (
-              <div 
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.name)}
-                style={{ 
-                  flex: '0 0 calc(20% - 16px)',
-                  padding: '10px 10px',
-                  background: selectedCategory === cat.name ? 'rgba(99, 102, 241, 0.05)' : 'white', 
-                  border: '1px solid',
-                  borderColor: selectedCategory === cat.name ? 'var(--accent-primary)' : '#e2e8f0',
-                  borderRadius: '16px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '15px', 
-                  cursor: 'pointer',
-                  height: '64px',
-                  transition: '0.3s'
-                }}
-              >
-                <div style={{ color: 'var(--accent-primary)' }}>{getCategoryIcon(cat.name)}</div>
-                <div>
-                  <div style={{ fontWeight: '800', fontSize: '1rem', color: '#0f172a', lineHeight: '1.2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cat.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{cat.course_count.toString().padStart(2, '0')} Courses</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {showRightArrow && (
-            <button onClick={handleNextCat} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-              <ChevronRight size={20} color="var(--accent-primary)" />
-            </button>
           )}
-        </div>
-      </section>
-
-      {/* Course Grid - Full Width */}
-      <section style={{ width: '90%', padding: '0 5%' }}>
-        <h2 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0f172a', marginBottom: '40px' }}>
-           {selectedCategory === 'All' ? 'All Live Courses' : `${selectedCategory} Courses`}
-        </h2>
-        
-        <div className="grid grid-cols-4" style={{ gap: '10px' }}>
-          {filteredCourses.map(course => {
-            const seatsLeft = (course.total_seats || 0) - (course.enrolled_count || 0);
-            
-            return (
-              <div key={course.id} className="glass-card hover-lift" style={{ 
-                background: 'white', 
-                borderRadius: '15px', 
-                overflow: 'hidden', 
-                border: '1px solid #f1f5f9',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'all 0.4s'
-              }}>
-                {/* 1. Image */}
-                <div style={{ height: '150px', width: '100%' }}>
-                  <img src={course.thumbnail || 'https://via.placeholder.com/400x225'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={course.title} />
-                </div>
-
-                <div style={{ padding: '0', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  
-                  {/* 2. Metrics Buttons Row - Adding small margin to keep away from edges */}
-                  <div style={{ display: 'flex', gap: '5px', padding: '15px 10px 10px' }}>
-                    <div style={{ flex: 1, background: '#f8fafc', color: '#475569', padding: '2px 5px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                       Batch {course.batch_no || '01'}
-                    </div>
-                    <div style={{ flex: 1, background: 'rgba(34, 197, 94, 0.08)', color: '#16a34a', padding: '2px 5px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }}>
-                       {seatsLeft > 0 ? seatsLeft : 0} Seats Left
-                    </div>
-                    <div style={{ flex: 1, background: 'rgba(245, 158, 11, 0.08)', color: '#d97706', padding: '2px 5px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '800', textAlign: 'center' }}>
-                       {getDaysLeft(course.start_date)}
-                    </div>
-                  </div>
-
-                  {/* 3. Course Name */}
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0f172a', padding: '0 10px 15px', lineHeight: '1.3', flex: 1 }}>
-                    {course.title}
-                  </h3>
-
-                  {/* 4. See Details Button */}
-                  <div style={{ padding: '0 10px 15px' }}>
-                    <Link to={`/course/${course.id}`} className="btn-primary" style={{ 
-                      width: '100%', 
-                      padding: '10px',
-                      borderRadius: '10px', 
-                      textAlign: 'center', 
-                      textDecoration: 'none', 
+          <div 
+            ref={categoryScrollRef}
+            onScroll={handleScroll}
+            style={{ 
+              display: 'flex', overflowX: 'auto', gap: '15px', paddingBottom: '10px', 
+              scrollbarWidth: 'none', msOverflowStyle: 'none', flex: 1, scrollBehavior: 'smooth'
+            }}>
+              {categories.map(cat => {
+                const isActive = selectedCategory === cat.name;
+                return (
+                  <div 
+                    key={cat.id}
+                    onClick={() => {
+                      setSelectedCategory(cat.name);
+                      setSearchParams({ category: cat.id.toString() });
+                    }}
+                    style={{ 
+                      flex: '0 0 auto',
+                      padding: '8px 12px',
+                      background: isActive ? '#1e293b' : 'white', 
+                      border: '1px solid',
+                      borderColor: isActive ? '#1e293b' : '#e2e8f0',
+                      borderRadius: '12px', 
                       display: 'flex', 
                       alignItems: 'center', 
-                      justifyContent: 'center', 
-                      gap: '10px',
-                      fontWeight: '900',
-                      fontSize: '0.95rem',
-                      boxShadow: 'none'
+                      gap: '8px', 
+                      cursor: 'pointer',
+                      transition: '0.3s'
+                    }}
+                  >
+                    <div style={{ 
+                      background: isActive ? 'rgba(255,255,255,0.1)' : '#f8fafc', 
+                      padding: '6px', 
+                      borderRadius: '8px',
+                      color: isActive ? '#fbbf24' : '#64748b' 
                     }}>
-                      See Details <ArrowRight size={18} />
-                    </Link>
+                      {getCategoryIcon(cat.name)}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: '700', fontSize: '0.85rem', color: isActive ? 'white' : '#0f172a', marginBottom: '2px' }}>{cat.name}</div>
+                      <div style={{ fontSize: '0.65rem', color: isActive ? '#cbd5e1' : '#64748b' }}>
+                        • {cat.course_count?.toString() || '0'} Course
+                      </div>
+                    </div>
                   </div>
-
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+          </div>
+          {canScrollRight && categories.length > 4 && (
+            <div 
+              onClick={() => scrollCategories('right')}
+              style={{ 
+                position: 'absolute', right: '-20px', top: '50%', transform: 'translateY(-50%)',
+                background: 'white', borderRadius: '50%', width: '40px', height: '40px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', zIndex: 10, border: '1px solid #e2e8f0'
+              }}
+            >
+              <ChevronRight size={20} color="#0f172a" />
+            </div>
+          )}
+        </div>
         </div>
       </section>
+
+      {/* Live Course Grid - Full Width */}
+      <section style={{ width: '100%', marginBottom: '40px' }}>
+        <div style={{ width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 50px', boxSizing: 'border-box' }}>
+            {liveCoursesList.length > 0 ? (
+              <div className="grid grid-cols-4" style={{ gap: '20px' }}>
+                {liveCoursesList.map(course => {
+                  const seatsLeft = (course.total_seats || 0) - (course.enrolled_count || 0);
+                  
+                  return (
+                    <div key={course.id} className="glass-card hover-lift" style={{ 
+                      background: 'white', 
+                      borderRadius: '12px', 
+                      overflow: 'hidden', 
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.4s',
+                      padding: 0
+                    }}>
+                      <div style={{ height: '180px', width: '100%', position: 'relative' }}>
+                        <img src={course.thumbnail || 'https://via.placeholder.com/400x225'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={course.title} />
+                      </div>
+
+                      <div style={{ padding: '15px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                          <div style={{ background: '#f8fafc', color: '#475569', padding: '6px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid #e2e8f0' }}>
+                             Batch {course.batch_no || '01'}
+                          </div>
+                          <div style={{ background: '#f8fafc', color: '#475569', padding: '6px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                             <User size={12} /> {seatsLeft > 0 ? seatsLeft : 0} Seats Left
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                          <div style={{ display: 'inline-flex', background: '#f8fafc', color: '#475569', padding: '6px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '700', border: '1px solid #e2e8f0', alignItems: 'center', gap: '4px' }}>
+                             <Clock size={12} /> {getDaysLeft(course.start_date)}
+                          </div>
+                        </div>
+
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a', marginBottom: '20px', lineHeight: '1.4', flex: 1 }}>
+                          {course.title}
+                        </h3>
+
+                        <div>
+                          <Link to={`/course/${course.id}`} style={{ 
+                            width: '100%', 
+                            padding: '12px',
+                            borderRadius: '8px', 
+                            textAlign: 'center', 
+                            textDecoration: 'none', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: '8px',
+                            fontWeight: '800',
+                            fontSize: '0.85rem',
+                            background: '#f1f5f9',
+                            color: '#0f172a',
+                            transition: '0.2s'
+                          }}
+                          onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                          >
+                            SEE DETAILS <ArrowRight size={16} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>No live courses found for this category.</div>
+            )}
+        </div>
+      </section>
+
+      {/* Pre-Recorded Course Grid - Full Width */}
+      {preRecordedCoursesList.length > 0 && (
+      <section style={{ width: '100%', marginBottom: '60px' }}>
+        <div style={{ width: '100%', maxWidth: '1280px', margin: '0 auto', padding: '0 50px', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
+              <PlayCircle color="#3b82f6" size={28} />
+              <h2 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0f172a', margin: 0 }}>Pre-Recorded Courses</h2>
+            </div>
+            <div className="grid grid-cols-4" style={{ gap: '20px' }}>
+              {preRecordedCoursesList.map(course => {
+                const catName = course.category_name || (categories.find(cat => cat.id === (course.category?.id || course.category))?.name) || 'Uncategorized';
+                
+                return (
+                  <div key={course.id} className="glass-card hover-lift" style={{ 
+                    background: 'white', 
+                    borderRadius: '12px', 
+                    overflow: 'hidden', 
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'all 0.4s',
+                    padding: 0
+                  }}>
+                    <div style={{ height: '180px', width: '100%', position: 'relative' }}>
+                      <img src={course.thumbnail || 'https://via.placeholder.com/400x225'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={course.title} />
+                    </div>
+
+                    <div style={{ padding: '15px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ marginBottom: '15px' }}>
+                        <div style={{ display: 'inline-flex', background: '#f8fafc', color: '#3b82f6', padding: '6px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800', border: '1px solid #bfdbfe', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                           {catName}
+                        </div>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f172a', marginBottom: '20px', lineHeight: '1.4', flex: 1 }}>
+                        {course.title}
+                      </h3>
+
+                      <div>
+                        <Link to={`/course/${course.id}`} style={{ 
+                          width: '100%', 
+                          padding: '12px',
+                          borderRadius: '8px', 
+                          textAlign: 'center', 
+                          textDecoration: 'none', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '8px',
+                          fontWeight: '800',
+                          fontSize: '0.85rem',
+                          background: '#f1f5f9',
+                          color: '#0f172a',
+                          transition: '0.2s'
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                        >
+                          SEE DETAILS <ArrowRight size={16} />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+        </div>
+      </section>
+      )}
 
       <style>{`
         .hover-lift:hover {

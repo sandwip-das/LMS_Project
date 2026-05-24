@@ -14,10 +14,12 @@ from .views import (
     SiteSettingsView
 )
 
+from .views import NotificationViewSet
 router = DefaultRouter()
 router.register(r'instructor-applications', InstructorApplicationViewSet, basename='instructor-application')
 router.register(r'manage', UserManageViewSet, basename='manage-users')
 router.register(r'students', StudentViewSet, basename='students')
+router.register(r'notifications', NotificationViewSet, basename='notifications')
 
 urlpatterns = [
     path('settings/', SiteSettingsView.as_view(), name='site_settings'),

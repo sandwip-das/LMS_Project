@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, User, BookOpen, 
-  CreditCard, LogOut, Settings, Bell
+  CreditCard, LogOut, Settings, Bell, Heart
 } from 'lucide-react';
 
 const getImageUrl = (path) => {
@@ -16,6 +16,7 @@ const StudentSidebar = ({ user }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'My Courses', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
+    { id: 'wishlist', label: 'My Wishlist', icon: <Heart size={20} />, path: '/wishlist' },
     { id: 'class_joining', label: 'Class Joining', icon: <BookOpen size={20} />, path: '/class-joining' },
     { id: 'live_classes', label: 'Live Classes', icon: <BookOpen size={20} />, path: '/live-classes' },
     { id: 'resources', label: 'Resources', icon: <BookOpen size={20} />, path: '/resources' },

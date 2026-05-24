@@ -77,8 +77,8 @@ a:hover {
   background: var(--danger);
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, opacity 0.2s;
@@ -91,13 +91,14 @@ a:hover {
 
 input, textarea, select {
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
@@ -132,7 +133,7 @@ label {
 
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: 0;
   width: 100%;
 }
 
@@ -196,4 +197,57 @@ label {
   .grid-cols-2, .grid-cols-3, .grid-cols-4 {
     grid-template-columns: 1fr;
   }
+}
+
+button {
+  padding: 5px !important;
+  border-radius: 10px !important;
+}
+
+.footer-link { color: #000000; transition: color 0.3s ease; }
+.footer-link:hover { color: #ff5722; }
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border-radius: 50%;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+.social-btn:hover {
+  transform: translateY(-5px) scale(1.1);
+  background: transparent;
+}
+.social-btn img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  transition: filter 0.3s ease;
+}
+.social-btn:hover img {
+  filter: brightness(1.2);
+}
+
+.brand-link {
+  transition: transform 0.3s ease;
+}
+.brand-link:hover {
+  transform: scale(1.02);
+}
+.brand-link .brand-logo {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.brand-link:hover .brand-logo {
+  transform: scale(1.15);
+  border-radius: 50% !important;
+}
+.brand-link .brand-text {
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+.brand-link:hover .brand-text {
+  transform: translateX(3px);
 }

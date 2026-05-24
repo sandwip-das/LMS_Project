@@ -110,9 +110,9 @@ const StudentPortals = () => {
   if (loading) return <div style={{ padding: '50px', textAlign: 'center', color: '#64748b' }}>Loading Student Records...</div>;
 
   return (
-    <div style={{ padding: '30px' }}>
-      <div style={{ marginBottom: '30px' }}>
-        <h2 style={{ marginBottom: '15px', fontWeight: '900', color: '#0f172a' }}>Student Portals</h2>
+    <div style={{ padding: '0px' }}>
+      <div style={{ marginBottom: '10px' }}>
+        <h2 style={{ marginBottom: '10px', fontWeight: '900', color: '#0f172a' }}>Student Portals</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr', gap: '12px', alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={16} />
@@ -152,12 +152,12 @@ const StudentPortals = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0', color: '#64748b', fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase' }}>
-              <th style={{ padding: '12px 20px' }}>Student Name</th>
-              <th style={{ padding: '12px 20px' }}>Contact Details</th>
-              <th style={{ padding: '12px 20px' }}>Active Course</th>
-              <th style={{ padding: '12px 20px' }}>Batch</th>
-              <th style={{ padding: '12px 20px' }}>Progress</th>
-              <th style={{ padding: '12px 20px', textAlign: 'right' }}>Action</th>
+              <th style={{ padding: '5px' }}>Student Name</th>
+              <th style={{ padding: '5px' }}>Contact Details</th>
+              <th style={{ padding: '5px' }}>Active Course</th>
+              <th style={{ padding: '5px' }}>Batch</th>
+              <th style={{ padding: '5px' }}>Progress</th>
+              <th style={{ padding: '5px', textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -165,7 +165,7 @@ const StudentPortals = () => {
               const enrollment = getStudentDisplayInfo(student);
               return (
                 <tr key={student.id} style={{ borderBottom: '1px solid #f1f5f9', transition: '0.2s' }}>
-                  <td style={{ padding: '10px 20px' }}>
+                  <td style={{ padding: '5px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
                          <User size={16} />
@@ -173,17 +173,17 @@ const StudentPortals = () => {
                       <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '0.9rem' }}>{student.full_name}</div>
                     </div>
                   </td>
-                  <td style={{ padding: '10px 20px' }}>
+                  <td style={{ padding: '5px' }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#1e293b' }}>{student.email}</div>
                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{student.mobile_number}</div>
                   </td>
-                  <td style={{ padding: '10px 20px', color: enrollment ? '#1e293b' : '#94a3b8', fontWeight: enrollment ? '600' : '400', fontSize: '0.85rem' }}>
+                  <td style={{ padding: '5px', color: enrollment ? '#1e293b' : '#94a3b8', fontWeight: enrollment ? '600' : '400', fontSize: '0.85rem' }}>
                     {enrollment ? enrollment.course_title : 'No Active Course'}
                   </td>
-                  <td style={{ padding: '10px 20px', color: enrollment ? '#1e293b' : '#94a3b8', fontSize: '0.85rem' }}>
+                  <td style={{ padding: '5px', color: enrollment ? '#1e293b' : '#94a3b8', fontSize: '0.85rem' }}>
                     {enrollment ? enrollment.batch_no : 'N/A'}
                   </td>
-                  <td style={{ padding: '10px 20px' }}>
+                  <td style={{ padding: '5px' }}>
                     {enrollment ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '80px', height: '6px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden' }}>
@@ -195,7 +195,7 @@ const StudentPortals = () => {
                       <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>Not Enrolled</span>
                     )}
                   </td>
-                  <td style={{ padding: '10px 20px', textAlign: 'right' }}>
+                  <td style={{ padding: '5px', textAlign: 'right' }}>
                     <button 
                       onClick={() => handleOpenPortal(student)}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#2563eb', background: '#eff6ff', border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '0.8rem' }}

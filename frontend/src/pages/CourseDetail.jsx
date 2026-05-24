@@ -135,8 +135,8 @@ const CourseDetail = () => {
 
       {/* 2. Sticky Tab Navigation */}
       <div style={{ position: 'sticky', top: '0', background: theme.white, borderBottom: '1px solid ' + theme.border, zIndex: 100, boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '40px', padding: '0 5%' }}>
-          {['curriculum', 'projects', 'mentors', 'reviews', 'faq'].map(tab => (
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '40px', padding: '0 5%', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}>
+          {['curriculum', 'course achievements', 'projects', 'who this course is for', 'got hired', 'reviews', 'faq', 'payments'].map(tab => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -181,18 +181,34 @@ const CourseDetail = () => {
                            </div>
                            <ChevronDown size={20} color={theme.muted} style={{ transform: expandedModule === idx ? 'rotate(180deg)' : 'none', transition: '0.3s' }} />
                         </div>
-                        {expandedModule === idx && (
+                         {expandedModule === idx && (
                           <div style={{ padding: '5px 28px 25px', borderTop: '1px solid ' + theme.border }}>
                              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingTop: '20px' }}>
-                                {module.lessons?.map((lesson, lIdx) => (
-                                  <div key={lesson.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: theme.text, fontSize: '0.95rem' }}>
-                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <PlayCircle size={16} color={theme.primary} /> {lesson.title}
-                                     </div>
-                                     <span style={{ color: theme.muted, fontSize: '0.85rem' }}>15:00 min</span>
+                                {module.weeks?.map((week, wIdx) => (
+                                  <div key={week.id} style={{ marginBottom: '15px' }}>
+                                    <h5 style={{ fontWeight: '800', fontSize: '1rem', color: theme.secondary, marginBottom: '10px' }}>
+                                      Week {week.week_number}: {week.topic_title}
+                                    </h5>
+                                    <div style={{ paddingLeft: '15px', borderLeft: '2px solid ' + theme.border, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                      {week.items?.map((item, iIdx) => (
+                                        <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: theme.text, fontSize: '0.95rem' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                              {item.item_type === 'live_class' && <Video size={16} color={theme.accent} />}
+                                              {item.item_type === 'assignment' && <BookOpen size={16} color="#059669" />}
+                                              {item.item_type === 'quiz' && <ShieldCheck size={16} color="#fbbf24" />}
+                                              {item.item_type === 'project' && <Briefcase size={16} color="#8b5cf6" />}
+                                              {item.title}
+                                          </div>
+                                          <span style={{ color: theme.muted, fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', background: theme.light, padding: '4px 8px', borderRadius: '4px' }}>
+                                            {item.item_type.replace('_', ' ')}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      {(!week.items || week.items.length === 0) && <p style={{ color: theme.muted, fontSize: '0.85rem', fontStyle: 'italic' }}>Items will be added soon.</p>}
+                                    </div>
                                   </div>
                                 ))}
-                                {(!module.lessons || module.lessons.length === 0) && <p style={{ color: theme.muted, fontStyle: 'italic' }}>Lesson details coming soon.</p>}
+                                {(!module.weeks || module.weeks.length === 0) && <p style={{ color: theme.muted, fontStyle: 'italic' }}>Week details coming soon.</p>}
                              </div>
                           </div>
                         )}
@@ -236,6 +252,14 @@ const CourseDetail = () => {
                        </p>
                     </div>
                  </div>
+              </section>
+           )}
+
+           {/* Placeholder for remaining new tabs to fulfill requirements */}
+           {['course achievements', 'who this course is for', 'got hired', 'reviews', 'faq', 'payments'].includes(activeTab) && (
+              <section className="animate-fade-in" style={{ padding: '40px', background: theme.light, borderRadius: '24px', border: '1px dashed ' + theme.border, textAlign: 'center' }}>
+                 <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '15px', textTransform: 'capitalize' }}>{activeTab}</h2>
+                 <p style={{ color: theme.muted }}>This section is currently being updated by the instructors. Check back soon for detailed {activeTab} information.</p>
               </section>
            )}
         </div>

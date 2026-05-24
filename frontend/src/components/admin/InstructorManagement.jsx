@@ -95,23 +95,23 @@ const InstructorManagement = () => {
   );
 
   return (
-    <div style={{ padding: '30px' }}>
+    <div style={{ padding: '0px' }}>
       <CustomModal 
         isOpen={notification.isOpen} type={notification.type} title={notification.title} message={notification.message} 
         onConfirm={notification.type === 'confirm' ? executeDelete : () => setNotification({ ...notification, isOpen: false })}
         onCancel={() => setNotification({ ...notification, isOpen: false })}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <div>
-           <h2 style={{ margin: 0 }}>Instructor Management</h2>
-           <p style={{ color: '#64748b', margin: '5px 0 0' }}>Manage all Instructors and Teaching Assistants profiles and accounts.</p>
-        </div>
-        <div style={{ position: 'relative', width: '300px' }}>
-          <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={18} />
+      <div style={{ marginBottom: '10px' }}>
+        <h2 style={{ marginBottom: '10px', fontWeight: '900', color: '#0f172a' }}>Instructor Management</h2>
+        <div style={{ position: 'relative', maxWidth: '400px' }}>
+          <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} size={16} />
           <input 
-            type="text" placeholder="Search instructors..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '10px 10px 10px 40px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+            type="text" 
+            placeholder="Search by ID, Name or Phone..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '100%', padding: '5px 5px 5px 30px', borderRadius: '4px', border: '1px solid #e2e8f0' }}
           />
         </div>
       </div>
@@ -138,8 +138,8 @@ const InstructorManagement = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '12px' }}>
-               <button onClick={() => handleEdit(member)} style={{ flex: 1, padding: '10px', background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '700', color: '#1e293b' }}>Edit Account</button>
-               <button onClick={() => confirmDelete(member)} style={{ flex: 1, padding: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '700' }}>Remove</button>
+               <button onClick={() => handleEdit(member)} style={{ flex: 1, padding: '5px', background: '#f1f5f9', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '700', color: '#1e293b' }}>Edit Account</button>
+               <button onClick={() => confirmDelete(member)} style={{ flex: 1, padding: '5px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '700' }}>Remove</button>
             </div>
           </div>
         ))}
@@ -156,22 +156,22 @@ const InstructorManagement = () => {
             <form onSubmit={handleUpdate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Full Name</label>
-                <input type="text" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Enter full name" />
+                <input type="text" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Enter full name" />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Instructor ID</label>
-                <input type="text" value={formData.user_id_custom} onChange={(e) => setFormData({...formData, user_id_custom: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Custom ID" />
+                <input type="text" value={formData.user_id_custom} onChange={(e) => setFormData({...formData, user_id_custom: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="Custom ID" />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Account Role</label>
-                <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white' }}>
+                <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white' }}>
                    <option value="instructor">Instructor</option>
                    <option value="teaching_assistant">Teaching Assistant</option>
                 </select>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Email Address</label>
-                <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="instructor@example.com" />
+                <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }} placeholder="instructor@example.com" />
               </div>
               <div style={{ gridColumn: 'span 2', display: 'flex', gap: '15px', marginTop: '15px' }}>
                 <button type="submit" style={{ flex: 1, padding: '15px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}>

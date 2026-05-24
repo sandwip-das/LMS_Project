@@ -40,7 +40,7 @@ const AdminSummary = () => {
   );
 
   return (
-    <div style={{ padding: '35px' }}>
+    <div style={{ padding: '0px' }}>
       <div style={{ marginBottom: '35px' }}>
         <h1 style={{ margin: 0, fontSize: '1.8rem', color: '#0f172a' }}>Welcome back, Admin</h1>
         <p style={{ margin: '5px 0 0', color: '#64748b' }}>Here's what's happening with your LMS today.</p>
