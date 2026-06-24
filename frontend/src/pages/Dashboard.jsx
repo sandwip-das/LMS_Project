@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { 
   BookOpen, Users, PlusCircle, CheckCircle, GraduationCap, 
-  BarChart3, Layout, Package, ShieldCheck, ArrowRight
+  BarChart3, Layout, Package, ShieldCheck, ArrowRight, ArrowLeft
 } from 'lucide-react';
 import api from '../api';
 import { formatDate } from '../utils/dateFormatter';
@@ -75,7 +75,7 @@ const AdminDashboardSummary = ({ stats }) => {
   );
 };
 
-const InstructorDashboard = ({ courses }) => {
+const InstructorDashboard = ({ courses, onManage }) => {
   return (
     <div className="fade-in">
        <header style={{ marginBottom: '40px' }}>
@@ -98,7 +98,7 @@ const InstructorDashboard = ({ courses }) => {
                   <span>Batch: {c.batch_no}</span>
                   <span>Enrolled: {c.enrolled_count}</span>
                </div>
-               <button className="btn-primary" style={{ width: '100%', marginTop: '20px', padding: '12px', borderRadius: '10px', fontSize: '0.9rem' }}>Open Management Panel <ArrowRight size={16} /></button>
+               <button onClick={() => onManage(c.id)} className="btn-primary" style={{ width: '100%', marginTop: '20px', padding: '12px', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer' }}>Open Management Panel <ArrowRight size={16} /></button>
             </div>
           ))
         )}
@@ -108,6 +108,7 @@ const InstructorDashboard = ({ courses }) => {
 };
 
 const StudentDashboard = ({ enrollments }) => {
+  const navigate = useNavigate();
   return (
     <div className="fade-in">
        <header style={{ marginBottom: '40px' }}>
@@ -133,7 +134,7 @@ const StudentDashboard = ({ enrollments }) => {
                <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '10px', overflow: 'hidden', marginBottom: '25px' }}>
                   <div style={{ width: `${e.progress || 0}%`, height: '100%', background: 'var(--accent-primary)' }}></div>
                </div>
-               <button className="btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '12px' }}>Continue Learning</button>
+               <button onClick={() => navigate(`/course/${e.course}`)} className="btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>Continue Learning</button>
             </div>
           ))
         )}
@@ -145,11 +146,14 @@ const StudentDashboard = ({ enrollments }) => {
 import DashboardLayout from '../components/DashboardLayout';
 import StudentSidebar from '../components/StudentSidebar';
 import Sidebar from '../components/admin/Sidebar';
+import CourseManagement from '../components/admin/CourseManagement';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [data, setData] = useState({ stats: null, courses: [], enrollments: [] });
   const [loading, setLoading] = useState(true);
+  const [managingCourseId, setManagingCourseId] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -183,7 +187,19 @@ const Dashboard = () => {
 
   const renderContent = () => {
     if (user.role === 'administrator' || user.is_superuser) return <AdminDashboardSummary stats={data.stats} />;
-    if (user.role === 'instructor' || user.role === 'teaching_assistant' || user.role === 'moderator') return <InstructorDashboard courses={data.courses} />;
+    if (user.role === 'instructor' || user.role === 'teaching_assistant' || user.role === 'moderator') {
+      if (managingCourseId) {
+         return (
+           <div className="fade-in">
+             <button onClick={() => setManagingCourseId(null)} style={{ marginBottom: '20px', padding: '10px 15px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+               <ArrowLeft size={16} /> Back to Dashboard
+             </button>
+             <CourseManagement isInstructorMode={true} />
+           </div>
+         );
+      }
+      return <InstructorDashboard courses={data.courses} onManage={setManagingCourseId} />;
+    }
     return <StudentDashboard enrollments={data.enrollments} />;
   };
 

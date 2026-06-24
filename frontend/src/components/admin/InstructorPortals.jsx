@@ -74,7 +74,7 @@ const InstructorPortals = () => {
               </div>
             </div>
 
-            <button style={{ width: '100%', marginTop: '25px', padding: '12px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.95rem', fontWeight: '700' }}>
+            <button onClick={() => alert(`Instructor Portal for ${ins.first_name} is not available in the public preview.`)} style={{ width: '100%', marginTop: '25px', padding: '12px', background: 'var(--black-accent)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.95rem', fontWeight: '700' }}>
               View Instructor Portal <ExternalLink size={16} />
             </button>
           </div>

@@ -12,8 +12,8 @@ import api from '../../api';
 import CustomModal from '../CustomModal';
 import { formatDate } from '../../utils/dateFormatter';
 
-const CourseManagement = () => {
-  const [activeTab, setActiveTab] = useState('all-courses');
+const CourseManagement = ({ isInstructorMode = false }) => {
+  const [activeTab, setActiveTab] = useState(isInstructorMode ? 'curriculum' : 'all-courses');
   const [categories, setCategories] = useState([]);
   const [courses, setCourses] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
@@ -88,7 +88,12 @@ const CourseManagement = () => {
           { id: 'curriculum', label: 'Course Curriculum', icon: GraduationCap },
           { id: 'modules', label: 'Module Management', icon: Package },
           { id: 'projects', label: 'Projects', icon: Layout }
-        ].map(tab => (
+        ].filter(tab => {
+          if (isInstructorMode) {
+            return ['curriculum', 'modules'].includes(tab.id);
+          }
+          return true;
+        }).map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={styles.tabButton(activeTab === tab.id)}>
             <tab.icon size={18} /> {tab.label}
           </button>
@@ -96,17 +101,16 @@ const CourseManagement = () => {
       </div>
 
       <div className="tab-content fade-in">
-        {activeTab === 'all-courses' && <AllCoursesSection courses={courses} categories={categories} />}
-        {activeTab === 'categories' && <CategorySection categories={categories} onRefresh={fetchData} notify={notify} />}
-        {activeTab === 'courses' && <CourseSection categories={categories} courses={courses} onRefresh={fetchData} notify={notify} />}
+        {!isInstructorMode && activeTab === 'all-courses' && <AllCoursesSection courses={courses} categories={categories} />}
+        {!isInstructorMode && activeTab === 'categories' && <CategorySection categories={categories} onRefresh={fetchData} notify={notify} />}
+        {!isInstructorMode && activeTab === 'courses' && <CourseSection categories={categories} courses={courses} onRefresh={fetchData} notify={notify} />}
         {activeTab === 'curriculum' && <CurriculumSection courses={courses} categories={categories} allUsers={allUsers} notify={notify} onRefresh={fetchData} />}
-        {activeTab === 'modules' && <ModuleManagementSection courses={courses} onRefresh={fetchData} notify={notify} />}
-        {activeTab === 'projects' && <ProjectSection courses={courses} notify={notify} onRefresh={fetchData} />}
+        {activeTab === 'modules' && <ModuleManagementSection courses={courses} notify={notify} onRefresh={fetchData} />}
+        {!isInstructorMode && activeTab === 'projects' && <ProjectSection courses={courses} notify={notify} onRefresh={fetchData} />}
       </div>
     </div>
   );
 };
-
 
 // --- Shared Helper: User Preview ---
 const UserPreview = ({ idInput, allUsers }) => {
